@@ -1,0 +1,44 @@
+﻿<Window x:Class="SOM_Kohonen_WpfApp.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="Self-organizing maps | Іващенко КНм-2-2"
+        Height="700"
+        Width="830"
+        Background="WhiteSmoke"
+        WindowStartupLocation="CenterScreen">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Menu Grid.Row="0"
+              FontSize="14"
+              Background="LightGray">
+
+            <MenuItem Header="_File">
+                <MenuItem Header="_New" Click="New_Click"/>
+                <MenuItem Header="_Open" Click="Open_Click"/>
+                <MenuItem Header="_Save" Click="Save_Click"/>
+                <MenuItem Header="_Close" Click="Close_Click"/>
+                <Separator/>
+                <MenuItem Header="_Exit" Click="Exit_Click"/>
+            </MenuItem>
+
+            <MenuItem Header="_Tools"></MenuItem>
+
+        </Menu>
+
+        <ScrollViewer Grid.Row="1">
+
+            <WrapPanel x:Name="MainGrid"
+                       Margin="10"/>
+
+        </ScrollViewer>
+    </Grid>
+
+</Window>
