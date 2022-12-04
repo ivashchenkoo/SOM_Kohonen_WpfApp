@@ -23,17 +23,27 @@ namespace SOM_Kohonen_WpfApp.Views
         {
             InitializeComponent();
 
-            string[] activationData = AppDomain.CurrentDomain.SetupInformation.ActivationArguments.ActivationData;
-            if (activationData != null && activationData.Any())
+            try
             {
-                OpenMapFromFile(activationData[0]);
+                string[] activationData = AppDomain.CurrentDomain?.SetupInformation?.ActivationArguments?.ActivationData;
+                if (activationData != null && activationData.Any())
+                {
+                    OpenMapFromFile(activationData[0]);
+                }
             }
+            catch (Exception) { }
         }
 
         #region Events
-        private void New_Click(object sender, RoutedEventArgs e)
+        private async void New_Click(object sender, RoutedEventArgs e)
         {
-
+            SOMWizardWindow wizard = new SOMWizardWindow
+            {
+                Owner = this
+            };
+            wizard.Show();
+            _map = await wizard.FetchAsync();
+            GenerateGrid(_map);
         }
 
         private void Open_Click(object sender, RoutedEventArgs e)
@@ -132,6 +142,11 @@ namespace SOM_Kohonen_WpfApp.Views
         private void GenerateGrid(Map map)
         {
             MainGrid.Children.Clear();
+            if (MapIsEmpty())
+            {
+                MessageBox.Show("Map is empty");
+                return;
+            }
 
             List<Grid> gridNodes = new List<Grid>();
             for (int i = 0; i < _map[0, 0].Weights.Count; i++)

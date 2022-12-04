@@ -4,6 +4,16 @@
              xmlns:local="clr-namespace:SOM_Kohonen_WpfApp"
              StartupUri="Views/MainWindow.xaml">
     <Application.Resources>
-         
+
+        <ResourceDictionary>
+
+            <ResourceDictionary.MergedDictionaries>
+
+                <ResourceDictionary Source="Styles/Datagrid.xaml"/>
+
+            </ResourceDictionary.MergedDictionaries>
+
+        </ResourceDictionary>
+
     </Application.Resources>
 </Application>

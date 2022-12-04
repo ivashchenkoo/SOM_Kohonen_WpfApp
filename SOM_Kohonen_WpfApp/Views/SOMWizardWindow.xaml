@@ -4,9 +4,267 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:SOM_Kohonen_WpfApp.Views"
+        xmlns:system="clr-namespace:System;assembly=mscorlib"
+        xmlns:models="clr-namespace:SOM_Kohonen_WpfApp.Models.Settings"
         mc:Ignorable="d"
-        Title="SOMWizardWindow" Height="450" Width="800">
+        ResizeMode="NoResize"
+        Title="Self-organizing maps Wizard"
+        Height="500"
+        Width="600"
+        Background="WhiteSmoke"
+        WindowStartupLocation="CenterOwner">
+
+    <Window.Resources>
+        <ObjectDataProvider x:Key="DataFromEnum" MethodName="GetValues"
+                            ObjectType="{x:Type system:Enum}">
+
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="models:InputOption"/>
+            </ObjectDataProvider.MethodParameters>
+
+        </ObjectDataProvider>
+    </Window.Resources>
+
     <Grid>
         
+        <Grid x:Name="ImportSettingsGrid"
+              Margin="10"
+              Visibility="Collapsed">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <Label Grid.Row="0"
+                   Margin="0,0,0,10"
+                   FontWeight="Bold">
+                _Import Settings
+            </Label>
+
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Button Grid.Column="0"
+                        Margin="0,0,10,10"
+                        Padding="5"
+                        ToolTip="Select json file with input data"
+                        Click="ImportSettingsSelectData_Click">
+                    _Select data
+                </Button>
+
+                <Label x:Name="InputFileNameLabel"
+                       Grid.Column="1">
+                    
+                </Label>
+                
+            </Grid>
+
+            <DataGrid Grid.Row="2"
+                      x:Name="DataColumnsDataGrid"
+                      SelectionUnit="FullRow" 
+                      SelectionMode="Single"
+                      Margin="0,0,0,10">
+
+                <DataGrid.CellStyle>
+                    <Style TargetType="{x:Type DataGridCell}"
+                           BasedOn="{StaticResource BaseDataGridCell}"/>
+                </DataGrid.CellStyle>
+
+                <DataGrid.Columns>
+
+                    <DataGridTextColumn Header="Column"
+                                        Binding="{Binding Column}"/>
+                    
+                    <DataGridComboBoxColumn Header="Option"
+                                            ItemsSource="{Binding Source={StaticResource DataFromEnum}}"
+                                            SelectedItemBinding="{Binding InputOption}"/>
+
+                </DataGrid.Columns>
+
+            </DataGrid>
+
+            <Grid Grid.Row="3"
+                  HorizontalAlignment="Right">
+
+                <Button Padding="15,5"
+                        Click="ImportSettingsNext_Click">
+                    _Next
+                </Button>
+                
+            </Grid>
+            
+        </Grid>
+
+        <Grid x:Name="NNTrainGrid"
+              Margin="10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Label Grid.Row="0"
+                       Grid.Column="0"
+                       Grid.ColumnSpan="2"
+                       Margin="0,0,10,0"
+                       HorizontalContentAlignment="Center">
+                    The dimensionality of the map
+                </Label>
+
+                <Label Grid.Row="1"
+                       Grid.Column="0"
+                       HorizontalContentAlignment="Right">
+                    Width
+                </Label>
+                
+                <Label Grid.Row="2"
+                       Grid.Column="0"
+                       HorizontalContentAlignment="Right">
+                    Height
+                </Label>
+
+                <TextBox x:Name="MapWidthTextBox"
+                         Grid.Row="1"
+                         Grid.Column="1"
+                         VerticalContentAlignment="Center"
+                         Margin="0,0,10,0"
+                         PreviewTextInput="Preview_TextInputInteger">
+                    24
+                </TextBox>
+                
+                <TextBox x:Name="MapHeightTextBox"
+                         Grid.Row="2"
+                         Grid.Column="1"
+                         VerticalContentAlignment="Center"
+                         Margin="0,0,10,0"
+                         PreviewTextInput="Preview_TextInputInteger">
+                    18
+                </TextBox>
+
+                <Label Grid.Row="0"
+                       Grid.Column="2"
+                       Grid.ColumnSpan="2"
+                       Margin="0,0,10,0"
+                       HorizontalContentAlignment="Center">
+                    Training settings
+                </Label>
+
+                <Label Grid.Row="1"
+                       Grid.Column="2"
+                       HorizontalContentAlignment="Right">
+                    Learning rate
+                </Label>
+
+                <Label Grid.Row="2"
+                       Grid.Column="2"
+                       HorizontalContentAlignment="Right">
+                    Iterations
+                </Label>
+
+                <TextBox x:Name="LearningRateTextBox"
+                         Grid.Row="1"
+                         Grid.Column="3"
+                         VerticalContentAlignment="Center"
+                         Margin="0,0,10,0"
+                         PreviewTextInput="Preview_TextInputDouble">
+                    0.03
+                </TextBox>
+
+                <TextBox x:Name="IterationsTextBox"
+                         Grid.Row="2"
+                         Grid.Column="3"
+                         VerticalContentAlignment="Center"
+                         Margin="0,0,10,0"
+                         PreviewTextInput="Preview_TextInputInteger">
+                    100
+                </TextBox>
+
+                <Button x:Name="TrainButton"
+                        Grid.Column="4"
+                        Grid.Row="1"
+                        Click="Train_Click">
+                    Train
+                </Button>
+
+            </Grid>
+
+            <Grid Grid.Row="1"
+                  Margin="0,10,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <ScrollViewer x:Name="LogScrollViewer"
+                              Grid.Column="0"
+                              Margin="0,0,10,0">
+                    <ListView x:Name="LogListView"
+                              Background="LightGray">
+
+                    </ListView>
+                </ScrollViewer>
+                
+                <StackPanel Orientation="Vertical"
+                            VerticalAlignment="Bottom"
+                            HorizontalAlignment="Right"
+                            Grid.Column="1">
+
+                    <Label HorizontalContentAlignment="Left">
+                        Iteration
+                    </Label>
+                    
+                    <Label x:Name="IterationLabel"
+                           HorizontalContentAlignment="Right"
+                           BorderBrush="Gray"
+                           BorderThickness="1">
+                        0
+                    </Label>
+
+                    <Grid Height="10"/>
+                    
+                    <Label HorizontalContentAlignment="Left">
+                        Training time
+                    </Label>
+                    
+                    <Label x:Name="TimeLabel"
+                           HorizontalContentAlignment="Right"
+                           BorderBrush="Gray"
+                           BorderThickness="1">
+                        0
+                    </Label>
+                    
+                    <Grid Height="50"/>
+                    
+                    <Button x:Name="ResultButton"
+                            Click="Result_Click"
+                            Padding="15,5">
+                        Result
+                    </Button>
+                    
+                </StackPanel>
+                
+            </Grid>
+            
+        </Grid>
+        
     </Grid>
+    
 </Window>

@@ -29,7 +29,9 @@
                 <MenuItem Header="_Exit" Click="Exit_Click"/>
             </MenuItem>
 
-            <MenuItem Header="_Tools"></MenuItem>
+            <MenuItem Header="_Tools">
+                <MenuItem Header="SOM Wizard" Click="New_Click"/>
+            </MenuItem>
 
         </Menu>
 
