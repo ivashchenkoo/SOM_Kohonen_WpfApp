@@ -57,19 +57,17 @@ namespace SOM_Kohonen_WpfApp.Views
             await Task.Run(() =>
             {
                 Dispatcher.Invoke(() => TrainButton.IsEnabled = false);
-
+                Stopwatch stopwatch = new Stopwatch();
+                stopwatch.Start();
                 double latticeRadius = Math.Max(map.Width, map.Height) / 2;
                 double timeConstant = iterations / Math.Log(latticeRadius);
                 double learningRate = learningRateStart;
                 int iteration = 0;
+
                 while (iteration < iterations)
                 {
-                    Dispatcher.Invoke(() =>
-                    {
-                        LogListView.Items.Add($"Iteration: {iteration + 1}, LearningRate: {learningRate}");
-                        LogScrollViewer.ScrollToBottom();
-                        IterationLabel.Content = iteration + 1;
-                    });
+                    stopwatch.Restart();
+                    Dispatcher.Invoke(() => IterationLabel.Content = iteration + 1);
 
                     double neighborhoodRadius = latticeRadius * Math.Exp(-iteration / timeConstant);
                     double neighborhoodDiameter = neighborhoodRadius * 2;
@@ -105,6 +103,12 @@ namespace SOM_Kohonen_WpfApp.Views
 
                     iteration++;
                     learningRate = learningRateStart * Math.Exp(-(double)iteration / iterations);
+
+                    Dispatcher.Invoke(() =>
+                    {
+                        LogListView.Items.Add($"Iteration: {iteration}\tLearningRate: {Math.Round(learningRate, 6)}\tTime: {stopwatch.Elapsed.Minutes}:{stopwatch.Elapsed.Seconds}:{stopwatch.Elapsed.Milliseconds}");
+                        LogScrollViewer.ScrollToBottom();
+                    });
                 }
             });
             Dispatcher.Invoke(() =>
