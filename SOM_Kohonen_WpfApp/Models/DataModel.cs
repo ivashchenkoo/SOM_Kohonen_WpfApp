@@ -3,7 +3,7 @@
 namespace SOM_Kohonen_WpfApp.Models
 {
     [Serializable()]
-    public class DataModel 
+    public class DataModel
     {
         public string Key { get; set; }
         public object Value { get; set; }

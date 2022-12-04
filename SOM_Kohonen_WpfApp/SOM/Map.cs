@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using SOM_Kohonen_WpfApp.Models;
 
@@ -90,7 +89,7 @@ namespace SOM_Kohonen_WpfApp.SOM
                     this[x, y] = new Node(x, y, weights);
                 }
             }
-            
+
             // Train
         }
 

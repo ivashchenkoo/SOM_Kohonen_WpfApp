@@ -26,7 +26,7 @@ namespace SOM_Kohonen_WpfApp.Views
         private List<Dictionary<string, object>> jsonData;
         private List<DataColumn> dataColumns;
         private Map _map;
-        private BackgroundWorker timerBW = new BackgroundWorker();
+        private readonly BackgroundWorker timerBW = new BackgroundWorker();
 
         public SOMWizardWindow()
         {
@@ -80,7 +80,7 @@ namespace SOM_Kohonen_WpfApp.Views
                     {
                         Node bestMatchingNode = map.GetBestMatchingNode(model);
 
-                        // Calculate the bounds of the neighborhood of MapNodes in the vicinity of the best matching node to adjust.
+                        // Calculate the neighborhood boundaries of map nodes near the best matching node to adjust.
                         int startX = (int)Math.Max(0, bestMatchingNode.X - neighborhoodRadius - 1);
                         int startY = (int)Math.Max(0, bestMatchingNode.Y - neighborhoodRadius - 1);
                         int endX = (int)Math.Min(map.Width, startX + neighborhoodDiameter + 1);
@@ -123,12 +123,12 @@ namespace SOM_Kohonen_WpfApp.Views
             }
 
             // Removing unneccessary properties
-
             var columnsToRemove = DataColumnsDataGrid.ItemsSource.Cast<DataColumn>().Where(x => x.InputOption == InputOption.Info);
             foreach (var item in columnsToRemove)
             {
                 jsonData.ForEach(x => x.Remove(item.MainColumn));
             }
+
             dataColumns = DataColumnsDataGrid.ItemsSource.Cast<DataColumn>().Where(x => x.InputOption == InputOption.Input).ToList();
 
             ImportSettingsGrid.Visibility = Visibility.Collapsed;
