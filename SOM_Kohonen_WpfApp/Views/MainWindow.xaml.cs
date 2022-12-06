@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using Microsoft.Win32;
+using SOM_Kohonen_WpfApp.Models;
 using SOM_Kohonen_WpfApp.Service;
 using SOM_Kohonen_WpfApp.SOM;
 using Color = System.Windows.Media.Color;
@@ -19,7 +20,7 @@ namespace SOM_Kohonen_WpfApp.Views
     public partial class MainWindow : Window
     {
         private Map _map;
-        private Grid _selectedNode;
+        private readonly List<Grid> _selectedNodes = new List<Grid>();
 
         public MainWindow()
         {
@@ -121,9 +122,57 @@ namespace SOM_Kohonen_WpfApp.Views
         {
             Close();
         }
+
+        private void NodeGrid_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            var grid = sender as Grid;
+            if (_selectedNodes.Contains(grid))
+            {
+                grid.Children.Clear();
+                _selectedNodes.Remove(grid);
+            }
+            else
+            {
+                Grid maskGrid = new Grid
+                {
+                    Background = new SolidColorBrush(Colors.Red)
+                };
+                grid.Children.Add(maskGrid);
+                _selectedNodes.Add(grid);
+            }
+            UpdateStatistics();
+        }
+
         #endregion
 
         #region Methods
+
+        private void UpdateStatistics()
+        {
+            if (_selectedNodes.Any())
+            {
+                StatisticsGrid.Visibility = Visibility.Visible;
+                StatisticsListView.Items.Clear();
+                List<DataCollection> weightsList = new List<DataCollection>();
+                foreach (var node in _selectedNodes)
+                {
+                    weightsList.Add(_map[Grid.GetColumn(node), Grid.GetRow(node)].Weights);
+                }
+                var averages = weightsList[0]
+                               .Select((dummy, i) => new { dummy.Key, Average = weightsList.Average(inner => inner[i].GetDoubleValue())}).ToList();
+
+                for (int i = 0; i < averages.Count; i++)
+                {
+                    StatisticsListView.Items.Add($"{Math.Round(averages[i].Average, 2)}\t{averages[i].Key}");
+                }
+            }
+            else
+            {
+                StatisticsListView.Items.Clear();
+                StatisticsGrid.Visibility = Visibility.Collapsed;
+            }
+        }
+
         private void OpenMapFromFile(string fileName)
         {
             try
@@ -214,42 +263,6 @@ namespace SOM_Kohonen_WpfApp.Views
                     }
                 }
             }
-        }
-
-        private void NodeGrid_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            var grid = sender as Grid;
-            if (_selectedNode == grid)
-            {
-                _selectedNode.Children.Clear();
-                _selectedNode = null;
-                StatisticsListView.Items.Clear();
-                StatisticsGrid.Visibility = Visibility.Collapsed;
-                return;
-            }
-            else
-            {
-                _selectedNode?.Children.Clear();
-                _selectedNode = grid;
-            }
-
-            Grid maskGrid = new Grid
-            {
-                Background = new SolidColorBrush(Colors.Red)
-            };
-            _selectedNode.Children.Add(maskGrid);
-
-            #region StatisticsGrid
-
-            StatisticsGrid.Visibility = Visibility.Visible;
-            StatisticsListView.Items.Clear();
-            var weights = _map[Grid.GetColumn(_selectedNode), Grid.GetRow(_selectedNode)].Weights;
-            for (int i = 0; i < weights.Count; i++)
-            {
-                StatisticsListView.Items.Add($"{Math.Round(weights[i].GetDoubleValue(),2)}\t{weights[i].Key}");
-            }
-
-            #endregion
         }
 
         private Grid CreateGrid(Color color, int width = 10, int height = 10)
