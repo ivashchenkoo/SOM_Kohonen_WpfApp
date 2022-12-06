@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Windows;
@@ -18,10 +19,13 @@ namespace SOM_Kohonen_WpfApp.Views
     public partial class MainWindow : Window
     {
         private Map _map;
+        private Grid _selectedNode;
 
         public MainWindow()
         {
             InitializeComponent();
+
+            StatisticsGrid.Visibility = Visibility.Collapsed;
 
             try
             {
@@ -203,12 +207,49 @@ namespace SOM_Kohonen_WpfApp.Views
                     {
                         Grid grid = CreateGrid(ConvertColor(GetColor((int)(mapNode.Weights[i].GetDoubleValue() / mapNode.Weights[i].MaxCollectionValue * 255))));
                         grid.Margin = new Thickness(0, 0, x + 1 != map.Width ? 1 : 0, y + 1 != map.Height ? 1 : 0);
+                        grid.MouseDown += NodeGrid_MouseDown;
                         Grid.SetColumn(grid, x);
                         Grid.SetRow(grid, y);
                         gridNodes[i].Children.Add(grid);
                     }
                 }
             }
+        }
+
+        private void NodeGrid_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            var grid = sender as Grid;
+            if (_selectedNode == grid)
+            {
+                _selectedNode.Children.Clear();
+                _selectedNode = null;
+                StatisticsListView.Items.Clear();
+                StatisticsGrid.Visibility = Visibility.Collapsed;
+                return;
+            }
+            else
+            {
+                _selectedNode?.Children.Clear();
+                _selectedNode = grid;
+            }
+
+            Grid maskGrid = new Grid
+            {
+                Background = new SolidColorBrush(Colors.Red)
+            };
+            _selectedNode.Children.Add(maskGrid);
+
+            #region StatisticsGrid
+
+            StatisticsGrid.Visibility = Visibility.Visible;
+            StatisticsListView.Items.Clear();
+            var weights = _map[Grid.GetColumn(_selectedNode), Grid.GetRow(_selectedNode)].Weights;
+            for (int i = 0; i < weights.Count; i++)
+            {
+                StatisticsListView.Items.Add($"{Math.Round(weights[i].GetDoubleValue(),2)}\t{weights[i].Key}");
+            }
+
+            #endregion
         }
 
         private Grid CreateGrid(Color color, int width = 10, int height = 10)
