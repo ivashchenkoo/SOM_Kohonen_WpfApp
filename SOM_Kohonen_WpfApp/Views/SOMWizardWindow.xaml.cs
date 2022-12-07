@@ -170,7 +170,7 @@ namespace SOM_Kohonen_WpfApp.Views
                 {
                     MainColumn = item,
                     Column = item,
-                    InputOption = item.ToLower() == "code" || item.ToLower() == "id" ? InputOption.Info : InputOption.Input
+                    InputOption = item.ToLower() == "code" || item.ToLower() == "id"|| item.ToLower() == "код" ? InputOption.Info : InputOption.Input
                 });
             }
 
