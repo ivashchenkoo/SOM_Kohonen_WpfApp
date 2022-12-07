@@ -74,6 +74,7 @@ namespace SOM_Kohonen_WpfApp.SOM
                 {
                     DataCollection weights = new DataCollection();
 
+                    Random random = new Random();
                     for (int i = 0; i < columns.Count; i++)
                     {
                         double min = minValues.GetDoubleValue(columns[i]);
@@ -81,7 +82,7 @@ namespace SOM_Kohonen_WpfApp.SOM
                         weights.Add(new DataModel
                         {
                             Key = columns[i],
-                            Value = (0.5 * (max - min)) + min,
+                            Value = (random.NextDouble() * (max - min)) + min,
                             MaxCollectionValue = max
                         });
                     }
