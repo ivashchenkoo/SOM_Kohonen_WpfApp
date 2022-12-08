@@ -90,9 +90,6 @@ namespace SOM_Kohonen_WpfApp.Views
                 return;
             }
 
-            _selectedNodes.Clear();
-            UpdateStatistics();
-
             var messageBoxResult = MessageBox.Show("Do you want to save progress before closing?", "Save the progress", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
 
             if (messageBoxResult == MessageBoxResult.Cancel)
@@ -118,6 +115,8 @@ namespace SOM_Kohonen_WpfApp.Views
             }
 
             MainGrid.Children.Clear();
+            _selectedNodes.Clear();
+            UpdateStatistics();
             _map = null;
         }
 
