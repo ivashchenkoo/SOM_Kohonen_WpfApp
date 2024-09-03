@@ -15,7 +15,7 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
     <IsWebBootstrapper>false</IsWebBootstrapper>
-    <PublishUrl>C:\Users\Alex\Desktop\SOM test app\</PublishUrl>
+    <PublishUrl>C:\Users\Rockie\Desktop\SOM APP\installer\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
     <UpdateEnabled>false</UpdateEnabled>
@@ -26,7 +26,7 @@
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>true</MapFileExtensions>
     <PublisherName>Ivashchenko Oleksandr</PublisherName>
-    <ApplicationRevision>10</ApplicationRevision>
+    <ApplicationRevision>11</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <CreateDesktopShortcut>true</CreateDesktopShortcut>
@@ -56,10 +56,10 @@
     <ApplicationIcon>Resources\icon.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestCertificateThumbprint>6B912955D7A381158D19C24E941AF324299C20D4</ManifestCertificateThumbprint>
+    <ManifestCertificateThumbprint>4389216F33BB9D0C25409688AB77F3E5C7088773</ManifestCertificateThumbprint>
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestKeyFile>SOM_Kohonen_WpfApp_TemporaryKey.pfx</ManifestKeyFile>
+    <ManifestKeyFile>SOM_Kohonen_WpfApp_1_TemporaryKey.pfx</ManifestKeyFile>
   </PropertyGroup>
   <PropertyGroup>
     <GenerateManifests>true</GenerateManifests>
@@ -100,6 +100,7 @@
     </ApplicationDefinition>
     <Compile Include="Models\Settings\DataColumn.cs" />
     <Compile Include="Models\Settings\InputOption.cs" />
+    <Compile Include="Service\RandomGenerator.cs" />
     <Compile Include="Views\SOMWizardWindow.xaml.cs">
       <DependentUpon>SOMWizardWindow.xaml</DependentUpon>
     </Compile>
@@ -155,6 +156,7 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
+    <None Include="SOM_Kohonen_WpfApp_1_TemporaryKey.pfx" />
     <None Include="SOM_Kohonen_WpfApp_TemporaryKey.pfx" />
   </ItemGroup>
   <ItemGroup>

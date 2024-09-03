@@ -9,10 +9,12 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media.Animation;
 using Microsoft.Win32;
 using Newtonsoft.Json.Linq;
 using SOM_Kohonen_WpfApp.Models;
 using SOM_Kohonen_WpfApp.Models.Settings;
+using SOM_Kohonen_WpfApp.Service;
 using SOM_Kohonen_WpfApp.SOM;
 using DataColumn = SOM_Kohonen_WpfApp.Models.Settings.DataColumn;
 
@@ -220,7 +222,15 @@ namespace SOM_Kohonen_WpfApp.Views
 
             int.TryParse(MapWidthTextBox.Text, out int width);
             int.TryParse(MapHeightTextBox.Text, out int height);
-            _map = new Map(width: width < 0 ? 24 : width, height: height < 0 ? 18 : height);
+            int.TryParse(SeedTextBox.Text, out int seed);
+            if (seed == 0)
+            {
+				seed = (int)DateTime.Now.Ticks;
+                SeedTextBox.Text = seed.ToString();
+			}
+
+            _map = new Map(width: width < 0 ? 24 : width, height: height < 0 ? 18 : height, seed);
+            
             _map.Initialize(dataModels, dataColumns.Select(x => x.Column).ToList());
 
             double.TryParse(LearningRateTextBox.Text, out double learningRate);

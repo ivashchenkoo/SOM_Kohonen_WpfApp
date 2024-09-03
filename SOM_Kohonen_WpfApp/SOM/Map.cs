@@ -2,15 +2,17 @@
 using System.Collections.Generic;
 using System.Linq;
 using SOM_Kohonen_WpfApp.Models;
+using SOM_Kohonen_WpfApp.Service;
 
 namespace SOM_Kohonen_WpfApp.SOM
 {
     [Serializable()]
     public class Map
     {
-        public Map(int width, int height)
+        public Map(int width, int height, int seed)
         {
             Grid = new Node[width, height];
+            Seed = seed;
         }
 
         #region Properties
@@ -40,10 +42,15 @@ namespace SOM_Kohonen_WpfApp.SOM
             get { return this.Grid.GetLength(1); }
         }
 
-        /// <summary>
-        /// Gets or sets the Node at the specified position by X and Y.
-        /// </summary>
-        public Node this[int x, int y]
+        public int Seed
+        {
+            get;
+        }
+
+		/// <summary>
+		/// Gets or sets the Node at the specified position by X and Y.
+		/// </summary>
+		public Node this[int x, int y]
         {
             get { return Grid[x, y]; }
             set { Grid[x, y] = value; }
@@ -68,13 +75,13 @@ namespace SOM_Kohonen_WpfApp.SOM
                 minValues.Add(column, models.Min(x => x.GetDoubleValue(column)));
             }
 
-            for (int x = 0; x < Width; x++)
+			RandomGenerator random = new RandomGenerator(Seed);
+			for (int x = 0; x < Width; x++)
             {
                 for (int y = 0; y < Height; y++)
                 {
                     DataCollection weights = new DataCollection();
 
-                    Random random = new Random();
                     for (int i = 0; i < columns.Count; i++)
                     {
                         double min = minValues.GetDoubleValue(columns[i]);
@@ -82,7 +89,7 @@ namespace SOM_Kohonen_WpfApp.SOM
                         weights.Add(new DataModel
                         {
                             Key = columns[i],
-                            Value = (random.NextDouble() * (max - min)) + min,
+                            Value = (random.Next() * (max - min)) + min,
                             MaxCollectionValue = max
                         });
                     }

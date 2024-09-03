@@ -119,6 +119,7 @@
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
                 <Label Grid.Row="0"
@@ -203,6 +204,21 @@
                         Click="Train_Click">
                     Train
                 </Button>
+
+                <Label Grid.Row="3"
+                       Grid.Column="0"
+                       HorizontalContentAlignment="Right">
+                    Seed (0 = random)
+                </Label>
+
+                <TextBox x:Name="SeedTextBox"
+                         Grid.Row="3"
+                         Grid.Column="1"
+                         VerticalContentAlignment="Center"
+                         Margin="0,0,10,0"
+                         PreviewTextInput="Preview_TextInputInteger">
+                    0
+                </TextBox>
 
             </Grid>
 
