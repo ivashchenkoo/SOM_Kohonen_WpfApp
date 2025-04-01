@@ -197,13 +197,42 @@ namespace SOM_Kohonen_WpfApp.Views
 		{
 			_selectedNodes.Clear();
 			UpdateStatistics();
-			MainGrid.Children.Clear();			
+			MainGrid.Children.Clear();
 			ViewMenu.Items.Clear();
 			MapSeedLabel.Content = "";
+			MapSeedLabel.Visibility = Visibility.Collapsed;
 			if (MapIsEmpty())
 			{
 				MessageBox.Show("Map is empty");
 				return;
+			}
+
+			MenuItem showMapSeedMenuItem = new MenuItem
+			{
+				IsCheckable = true,
+				IsChecked = Properties.Settings.Default.ShowMapSeedInResults,
+				Header = "Show map seed"
+			};
+			showMapSeedMenuItem.Click += (s, e) =>
+			{
+				Properties.Settings.Default.ShowMapSeedInResults = !Properties.Settings.Default.ShowMapSeedInResults;
+				if (Properties.Settings.Default.ShowMapSeedInResults)
+				{
+					MapSeedLabel.Visibility = Visibility.Visible;
+				}
+				else
+				{
+					MapSeedLabel.Visibility = Visibility.Collapsed;
+				}
+			};
+
+			ViewMenu.Items.Add(new Separator());
+
+			ViewMenu.Items.Add(showMapSeedMenuItem);
+
+			if (Properties.Settings.Default.ShowMapSeedInResults)
+			{
+				MapSeedLabel.Visibility = Visibility.Visible;
 			}
 
 			MapSeedLabel.Content = $"Map seed: {map.Seed}";
@@ -305,7 +334,7 @@ namespace SOM_Kohonen_WpfApp.Views
 				}
 			}
 			catch (Exception) { }
-        }
+		}
 
 		private Grid CreateGrid(Color color, int width = 10, int height = 10)
 		{
