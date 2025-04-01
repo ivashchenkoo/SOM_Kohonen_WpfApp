@@ -216,6 +216,7 @@ namespace SOM_Kohonen_WpfApp.Views
 			showMapSeedMenuItem.Click += (s, e) =>
 			{
 				Properties.Settings.Default.ShowMapSeedInResults = !Properties.Settings.Default.ShowMapSeedInResults;
+				Properties.Settings.Default.Save();
 				if (Properties.Settings.Default.ShowMapSeedInResults)
 				{
 					MapSeedLabel.Visibility = Visibility.Visible;
