@@ -48,6 +48,11 @@ namespace SOM_Kohonen_WpfApp.Views
 			wizard.Show();
 			_map = await wizard.FetchAsync();
 			GenerateGrid(_map);
+			// Only show data reduction if enabled in the wizard
+			if (wizard.ShowDataReduction)
+			{
+				AnalyzeAndMarkLowInfluenceFeatures();
+			}
 		}
 
 		private void Open_Click(object sender, RoutedEventArgs e)
@@ -186,11 +191,21 @@ namespace SOM_Kohonen_WpfApp.Views
 				}
 
 				GenerateGrid(_map);
+				AnalyzeAndMarkLowInfluenceFeatures();
 			}
 			catch (Exception ex)
 			{
 				MessageBox.Show(ex.Message, "The file could not be opened", MessageBoxButton.OK, MessageBoxImage.Error);
 			}
+		}
+
+		// Utility to sanitize column names for use as UI element names only
+		private static string SanitizeColumnName(string columnName)
+		{
+			var sanitized = System.Text.RegularExpressions.Regex.Replace(columnName, @"[^a-zA-Z0-9]", "");
+			if (string.IsNullOrEmpty(sanitized) || char.IsDigit(sanitized[0]))
+				sanitized = "Col" + sanitized;
+			return sanitized;
 		}
 
 		private void GenerateGrid(Map map)
@@ -228,7 +243,6 @@ namespace SOM_Kohonen_WpfApp.Views
 			};
 
 			ViewMenu.Items.Add(showMapSeedMenuItem);
-
 			ViewMenu.Items.Add(new Separator());
 
 			if (Properties.Settings.Default.ShowMapSeedInResults)
@@ -242,12 +256,13 @@ namespace SOM_Kohonen_WpfApp.Views
 			for (int i = 0; i < _map[0, 0].Weights.Count; i++)
 			{
 				Grid grid = CreateGrid(Colors.Gray, map.Width * 10, map.Height * 10);
-				string mapKey = _map[0, 0].Weights[i].Key;
+				string mapKey = _map[0, 0].Weights[i].Key; // Use original key for display
+				string sanitizedKey = SanitizeColumnName(mapKey); // Only for UI element names
 
 				MenuItem menuItem = new MenuItem
 				{
-					Name = $"{mapKey}MenuItem",
-					Header = $"{mapKey}MenuItem",
+					Name = $"{sanitizedKey}MenuItem",
+					Header = $"{mapKey}MenuItem", // Display original key
 					IsCheckable = true,
 					IsChecked = true
 				};
@@ -266,7 +281,7 @@ namespace SOM_Kohonen_WpfApp.Views
 
 				TextBlock txtBlock = new TextBlock
 				{
-					Text = mapKey,
+					Text = mapKey, // Display original key
 					FontSize = 14,
 					FontWeight = FontWeights.Bold,
 					Foreground = new SolidColorBrush(Colors.Black),
@@ -296,10 +311,10 @@ namespace SOM_Kohonen_WpfApp.Views
 				MainGrid.Children.Add(border);
 				try
 				{
-					UnregisterName($"{mapKey}Grid");
+					UnregisterName($"{sanitizedKey}Grid");
 				}
 				catch (Exception) { }
-				RegisterName($"{mapKey}Grid", border);
+				RegisterName($"{sanitizedKey}Grid", border);
 			}
 
 			for (int x = 0; x < map.Width; x++)
@@ -323,15 +338,16 @@ namespace SOM_Kohonen_WpfApp.Views
 		private void ColumnsVisibilityMenuItem_Click(object sender, RoutedEventArgs e)
 		{
 			MenuItem menuItem = (MenuItem)sender;
+			string sanitizedKey = menuItem.Name.Replace("MenuItem", "");
 			try
 			{
 				if (menuItem.IsChecked)
 				{
-					((Border)FindName(menuItem.Name.Replace("MenuItem", "Grid"))).Visibility = Visibility.Visible;
+					((Border)FindName($"{sanitizedKey}Grid")).Visibility = Visibility.Visible;
 				}
 				else
 				{
-					((Border)FindName(menuItem.Name.Replace("MenuItem", "Grid"))).Visibility = Visibility.Collapsed;
+					((Border)FindName($"{sanitizedKey}Grid")).Visibility = Visibility.Collapsed;
 				}
 			}
 			catch (Exception) { }
@@ -406,6 +422,55 @@ namespace SOM_Kohonen_WpfApp.Views
 		{
 			return _map == null || _map.Width == 0 || _map.Height == 0 || _map.Depth == 0;
 		}
+
+		// Call this after training and grid generation to analyze and mark low-influence features
+		private void AnalyzeAndMarkLowInfluenceFeatures()
+		{
+			if (_map == null) return;
+			// 1. Calculate variance for each feature
+			var variances = _map.CalculateFeatureVariance();
+			if (variances.Count == 0) return;
+
+			// Dynamically set threshold so that about 15–20% of features are marked as low influence
+			// Sort variances and use the 20th percentile as the cutoff
+			var sortedVars = variances.OrderBy(kv => kv.Value).ToList();
+			int n = sortedVars.Count;
+			int cutoffIndex = (int)Math.Ceiling(n * 0.2) - 1; // 20th percentile
+			if (cutoffIndex < 0) cutoffIndex = 0;
+			double threshold = sortedVars[cutoffIndex].Value;
+			// Only features with variance <= threshold are marked as low influence
+
+			// 2. Identify low-influence features
+			var lowImpact = variances.Where(kv => kv.Value <= threshold).Select(kv => kv.Key).ToList();
+
+			// 3. Mark in UI: change label color and add tag for low-influence features
+			bool anyMarked = false;
+			foreach (var child in MainGrid.Children)
+			{
+				if (child is Border border && border.Child is StackPanel panel && panel.Children[0] is TextBlock txt)
+				{
+					string feature = txt.Text.Replace(" (Low Influence)", "");
+					if (lowImpact.Contains(feature))
+					{
+						txt.Foreground = new SolidColorBrush(Colors.Red); // Mark as low influence
+						txt.Text = feature + " (Low Influence)";
+						anyMarked = true;
+					}
+					else
+					{
+						txt.Foreground = new SolidColorBrush(Colors.Black); // Reset others
+						txt.Text = feature;
+					}
+				}
+			}
+
+			// 4. Show message if none found
+			if (!anyMarked)
+			{
+				MessageBox.Show("No parameters with low influence were found.", "Feature Reduction", MessageBoxButton.OK, MessageBoxImage.Information);
+			}
+		}
+
 		#endregion
 	}
 }
