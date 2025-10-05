@@ -128,5 +128,29 @@ namespace SOM_Kohonen_WpfApp.SOM
 
             return bestMatchingNode;
         }
+
+        /// <summary>
+        /// Calculates the variance of each feature's weights across all SOM nodes.
+        /// Low variance means the feature had little effect on the map's structure.
+        /// </summary>
+        /// <returns>Dictionary mapping feature name to variance value.</returns>
+        public Dictionary<string, double> CalculateFeatureVariance()
+        {
+            var featureNames = Grid[0, 0].Weights.Select(w => w.Key).ToList();
+            var result = new Dictionary<string, double>();
+
+            foreach (var feature in featureNames)
+            {
+                var values = new List<double>();
+                for (int x = 0; x < Width; x++)
+                    for (int y = 0; y < Height; y++)
+                        values.Add(Grid[x, y].Weights.First(w => w.Key == feature).GetDoubleValue());
+
+                double mean = values.Average();
+                double variance = values.Select(v => (v - mean) * (v - mean)).Average();
+                result[feature] = variance;
+            }
+            return result;
+        }
     }
 }
