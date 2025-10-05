@@ -56,10 +56,10 @@
     <ApplicationIcon>Resources\icon.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestCertificateThumbprint>4389216F33BB9D0C25409688AB77F3E5C7088773</ManifestCertificateThumbprint>
+    <ManifestCertificateThumbprint>21A6AEE0F0A57FCB3E84EFCEA5312B4EA0076597</ManifestCertificateThumbprint>
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestKeyFile>SOM_Kohonen_WpfApp_1_TemporaryKey.pfx</ManifestKeyFile>
+    <ManifestKeyFile>SOM_Kohonen_WpfApp_2_TemporaryKey.pfx</ManifestKeyFile>
   </PropertyGroup>
   <PropertyGroup>
     <GenerateManifests>true</GenerateManifests>
@@ -157,6 +157,7 @@
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
     <None Include="SOM_Kohonen_WpfApp_1_TemporaryKey.pfx" />
+    <None Include="SOM_Kohonen_WpfApp_2_TemporaryKey.pfx" />
     <None Include="SOM_Kohonen_WpfApp_TemporaryKey.pfx" />
   </ItemGroup>
   <ItemGroup>
