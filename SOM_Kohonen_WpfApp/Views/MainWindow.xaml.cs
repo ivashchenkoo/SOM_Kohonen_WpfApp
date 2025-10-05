@@ -227,9 +227,9 @@ namespace SOM_Kohonen_WpfApp.Views
 				}
 			};
 
-			ViewMenu.Items.Add(new Separator());
-
 			ViewMenu.Items.Add(showMapSeedMenuItem);
+
+			ViewMenu.Items.Add(new Separator());
 
 			if (Properties.Settings.Default.ShowMapSeedInResults)
 			{
