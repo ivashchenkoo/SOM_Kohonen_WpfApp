@@ -30,6 +30,11 @@ namespace SOM_Kohonen_WpfApp.Views
         private Map _map;
         private readonly BackgroundWorker timerBW = new BackgroundWorker();
 
+        // Mapping for text column encoding (text value to int)
+        private Dictionary<string, Dictionary<string, int>> textColumnEncodingMap = new Dictionary<string, Dictionary<string, int>>();
+        // Mapping for decoding (int to text value)
+        private Dictionary<string, Dictionary<int, string>> textColumnDecodingMap = new Dictionary<string, Dictionary<int, string>>();
+
         public SOMWizardWindow()
         {
             InitializeComponent();
@@ -141,6 +146,15 @@ namespace SOM_Kohonen_WpfApp.Views
             NNTrainGrid.Visibility = Visibility.Visible;
         }
 
+        // Utility to sanitize column names for use as UI element names
+        private static string SanitizeColumnName(string columnName)
+        {
+            var sanitized = Regex.Replace(columnName, @"[^a-zA-Z0-9]", "");
+            if (string.IsNullOrEmpty(sanitized) || char.IsDigit(sanitized[0]))
+                sanitized = "Col" + sanitized;
+            return sanitized;
+        }
+
         private void ImportSettingsSelectData_Click(object sender, RoutedEventArgs e)
         {
             OpenFileDialog openFileDialog = new OpenFileDialog
@@ -164,6 +178,27 @@ namespace SOM_Kohonen_WpfApp.Views
                 columns.AddRange(item.Keys);
             }
             columns = columns.Distinct().ToList();
+
+            // Detect text columns and build encoding/decoding maps
+            textColumnEncodingMap.Clear();
+            textColumnDecodingMap.Clear();
+            foreach (var col in columns)
+            {
+                var values = jsonData.Select(row => row.ContainsKey(col) ? row[col] : null).Where(v => v != null).ToList();
+                if (values.Any(v => v is string))
+                {
+                    var unique = values.Select(v => v.ToString()).Distinct().ToList();
+                    var encoding = new Dictionary<string, int>();
+                    var decoding = new Dictionary<int, string>();
+                    for (int i = 0; i < unique.Count; i++)
+                    {
+                        encoding[unique[i]] = i;
+                        decoding[i] = unique[i];
+                    }
+                    textColumnEncodingMap[col] = encoding;
+                    textColumnDecodingMap[col] = decoding;
+                }
+            }
 
             dataColumns = new List<DataColumn>();
             foreach (var item in columns)
@@ -207,17 +242,37 @@ namespace SOM_Kohonen_WpfApp.Views
         {
             LogListView.Items.Clear();
 
-            // Initializing training data
+            // Prepare feature set for SOM (one feature per input column)
+            var inputColumns = new List<string>();
+            foreach (var col in dataColumns.Where(x => x.InputOption == InputOption.Input))
+            {
+                inputColumns.Add(SanitizeColumnName(col.Column));
+            }
+
+            // Initializing training data with one feature per column
             List<DataCollection> dataModels = new List<DataCollection>();
             foreach (var item in jsonData)
             {
-                dataModels.Add(new DataCollection(item));
-            }
-
-            var columnsToRename = dataColumns.Where(x => x.Column != x.MainColumn).ToList();
-            for (int i = 0; i < columnsToRename.Count; i++)
-            {
-                dataModels.ForEach(x => x.Where(y => y.Key == columnsToRename[i].MainColumn).ToList().ForEach(z => z.Key = columnsToRename[i].Column));
+                var dict = new Dictionary<string, object>();
+                foreach (var col in dataColumns.Where(x => x.InputOption == InputOption.Input))
+                {
+                    var key = SanitizeColumnName(col.Column);
+                    if (textColumnEncodingMap.ContainsKey(col.Column))
+                    {
+                        // Encode text as integer index
+                        var val = item.ContainsKey(col.Column) ? item[col.Column]?.ToString() : null;
+                        if (val != null && textColumnEncodingMap[col.Column].ContainsKey(val))
+                            dict[key] = textColumnEncodingMap[col.Column][val];
+                        else
+                            dict[key] = -1; // Unknown/missing value
+                    }
+                    else
+                    {
+                        // Numeric
+                        dict[key] = item.ContainsKey(col.Column) ? item[col.Column] : 0.0;
+                    }
+                }
+                dataModels.Add(new DataCollection(dict));
             }
 
             int.TryParse(MapWidthTextBox.Text, out int width);
@@ -225,13 +280,13 @@ namespace SOM_Kohonen_WpfApp.Views
             int.TryParse(SeedTextBox.Text, out int seed);
             if (seed == 0)
             {
-				seed = (int)DateTime.Now.Ticks;
+                seed = (int)DateTime.Now.Ticks;
                 SeedTextBox.Text = seed.ToString();
-			}
+            }
 
             _map = new Map(width: width < 0 ? 24 : width, height: height < 0 ? 18 : height, seed);
-            
-            _map.Initialize(dataModels, dataColumns.Select(x => x.Column).ToList());
+
+            _map.Initialize(dataModels, inputColumns);
 
             double.TryParse(LearningRateTextBox.Text, out double learningRate);
             if (learningRate <= 0)
@@ -252,9 +307,13 @@ namespace SOM_Kohonen_WpfApp.Views
 
         private void Result_Click(object sender, RoutedEventArgs e)
         {
+            // Set both the map and the checkbox state for the result
             _tcs.SetResult(_map);
             Close();
         }
+
+        // Property to store the Show Data Reduction checkbox state
+        public bool ShowDataReduction => ShowDataReductionCheckBox?.IsChecked == true;
 
         private readonly TaskCompletionSource<Map> _tcs = new TaskCompletionSource<Map>();
 

@@ -220,6 +220,17 @@
                     0
                 </TextBox>
 
+                <CheckBox x:Name="ShowDataReductionCheckBox"
+                          Grid.Row="3"
+                          Grid.Column="2"
+                          Grid.ColumnSpan="2"
+                          VerticalAlignment="Center"
+                          HorizontalAlignment="Right"
+                          Margin="0,0,10,0"
+                          IsChecked="True">
+                    Show Data Reduction
+                </CheckBox>
+
             </Grid>
 
             <Grid Grid.Row="1"
