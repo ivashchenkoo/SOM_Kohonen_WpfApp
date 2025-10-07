@@ -34,9 +34,12 @@
             <MenuItem Header="_Tools">
                 <MenuItem Header="SOM Wizard" Click="New_Click"/>
             </MenuItem>
-            
+
             <MenuItem Header="_View" x:Name="ViewMenu">
-                
+            </MenuItem>
+
+            <MenuItem Header="_Display" x:Name="DisplayMenu">
+                <MenuItem Header="Show Text Mappings" Click="ShowTextMappings_Click"/>
             </MenuItem>
 
         </Menu>
@@ -75,14 +78,23 @@
                 Average values:
             </Label>
 
-            <ListView x:Name="StatisticsListView"
+            <DataGrid x:Name="StatisticsDataGrid"
                       Grid.Row="1"
                       FontSize="15"
                       MaxHeight="245"
                       Margin="10,0,10,10"
-                      ScrollViewer.VerticalScrollBarVisibility="Visible"
-                      Background="WhiteSmoke"/>
-
+                      AutoGenerateColumns="False"
+                      HeadersVisibility="Column"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      IsReadOnly="True"
+                      Background="WhiteSmoke"
+                      ScrollViewer.VerticalScrollBarVisibility="Visible">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Value" Binding="{Binding Value}" Width="*" />
+                    <DataGridTextColumn Header="Parameter" Binding="{Binding Parameter}" Width="*" />
+                </DataGrid.Columns>
+            </DataGrid>
         </Grid>
     </Grid>
 

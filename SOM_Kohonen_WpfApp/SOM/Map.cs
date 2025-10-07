@@ -62,6 +62,7 @@ namespace SOM_Kohonen_WpfApp.SOM
         /// </summary>
         public virtual void Initialize(IList<DataCollection> models, List<string> columns)
         {
+            TrainingData = models; // Store training data for later reference
             Depth = columns.Count;
             DataDictionary maxValues = new DataDictionary();
             foreach (var column in columns)
@@ -152,5 +153,10 @@ namespace SOM_Kohonen_WpfApp.SOM
             }
             return result;
         }
+
+        public IList<DataCollection> TrainingData { get; set; }
+
+        // Mapping: parameter name -> (numeric value -> original text)
+        public Dictionary<string, Dictionary<double, string>> TextValueMappings { get; set; } = new Dictionary<string, Dictionary<double, string>>();
     }
 }

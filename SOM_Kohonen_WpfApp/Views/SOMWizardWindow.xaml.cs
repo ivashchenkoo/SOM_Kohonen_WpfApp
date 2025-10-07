@@ -251,30 +251,52 @@ namespace SOM_Kohonen_WpfApp.Views
 
             // Initializing training data with one feature per column
             List<DataCollection> dataModels = new List<DataCollection>();
+            // Build text value mappings for each text-based parameter
+            var textValueMappings = new Dictionary<string, Dictionary<double, string>>();
             foreach (var item in jsonData)
             {
                 var dict = new Dictionary<string, object>();
+                var vectorizedValues = new List<double>();
+                string originalText = string.Empty;
                 foreach (var col in dataColumns.Where(x => x.InputOption == InputOption.Input))
                 {
                     var key = SanitizeColumnName(col.Column);
                     if (textColumnEncodingMap.ContainsKey(col.Column))
                     {
-                        // Encode text as integer index
                         var val = item.ContainsKey(col.Column) ? item[col.Column]?.ToString() : null;
                         if (val != null && textColumnEncodingMap[col.Column].ContainsKey(val))
-                            dict[key] = textColumnEncodingMap[col.Column][val];
+                        {
+                            double numVal = textColumnEncodingMap[col.Column][val];
+                            dict[key] = numVal;
+                            vectorizedValues.Add(numVal);
+                            originalText += val + "; ";
+                            // Add to mapping
+                            if (!textValueMappings.ContainsKey(key))
+                                textValueMappings[key] = new Dictionary<double, string>();
+                            if (!textValueMappings[key].ContainsKey(numVal))
+                                textValueMappings[key][numVal] = val;
+                        }
                         else
-                            dict[key] = -1; // Unknown/missing value
+                        {
+                            dict[key] = -1;
+                            vectorizedValues.Add(-1);
+                        }
                     }
                     else
                     {
-                        // Numeric
-                        dict[key] = item.ContainsKey(col.Column) ? item[col.Column] : 0.0;
+                        double numVal = item.ContainsKey(col.Column) ? Convert.ToDouble(item[col.Column]) : 0.0;
+                        dict[key] = numVal;
+                        vectorizedValues.Add(numVal);
                     }
                 }
-                dataModels.Add(new DataCollection(dict));
+                var mapping = new TextVectorMapping
+                {
+                    OriginalText = originalText.TrimEnd(' ', ';'),
+                    VectorizedValues = vectorizedValues
+                };
+                dataModels.Add(new DataCollection(dict, mapping));
             }
-
+            // Assign mapping to map
             int.TryParse(MapWidthTextBox.Text, out int width);
             int.TryParse(MapHeightTextBox.Text, out int height);
             int.TryParse(SeedTextBox.Text, out int seed);
@@ -285,6 +307,7 @@ namespace SOM_Kohonen_WpfApp.Views
             }
 
             _map = new Map(width: width < 0 ? 24 : width, height: height < 0 ? 18 : height, seed);
+            _map.TextValueMappings = textValueMappings;
 
             _map.Initialize(dataModels, inputColumns);
 

@@ -149,6 +149,31 @@ namespace SOM_Kohonen_WpfApp.Views
 			UpdateStatistics();
 		}
 
+		private void ShowTextMappings_Click(object sender, RoutedEventArgs e)
+		{
+			if (_map?.TextValueMappings == null || _map.TextValueMappings.Count == 0)
+			{
+				MessageBox.Show("No text mappings available.", "Text Mappings", MessageBoxButton.OK, MessageBoxImage.Information);
+				return;
+			}
+			var rows = new List<TextMappingRow>();
+			foreach (var param in _map.TextValueMappings)
+			{
+				string paramName = param.Key;
+				foreach (var kv in param.Value)
+				{
+					rows.Add(new TextMappingRow
+					{
+						Parameter = paramName,
+						OriginalText = kv.Value,
+						NumericValue = kv.Key
+					});
+				}
+			}
+			var win = new TextMappingsWindow(rows) { Owner = this };
+			win.ShowDialog();
+		}
+
 		#endregion
 
 		#region Methods
@@ -158,23 +183,40 @@ namespace SOM_Kohonen_WpfApp.Views
 			if (_selectedNodes.Any())
 			{
 				StatisticsGrid.Visibility = Visibility.Visible;
-				StatisticsListView.Items.Clear();
+				StatisticsDataGrid.ItemsSource = null;
 				List<DataCollection> weightsList = new List<DataCollection>();
 				foreach (var node in _selectedNodes)
 				{
 					weightsList.Add(_map[Grid.GetColumn(node), Grid.GetRow(node)].Weights);
 				}
 				var averages = weightsList[0]
-							   .Select((dummy, i) => new { dummy.Key, Average = weightsList.Average(inner => inner[i].GetDoubleValue()) }).ToList();
+					.Select((dummy, i) => new { dummy.Key, Average = weightsList.Average(inner => inner[i].GetDoubleValue()) })
+					.ToList();
 
+				var tableRows = new List<object>();
 				for (int i = 0; i < averages.Count; i++)
 				{
-					StatisticsListView.Items.Add($"{Math.Round(averages[i].Average, 2)}\t{averages[i].Key}");
+					string key = averages[i].Key;
+					double avg = averages[i].Average;
+					string displayValue;
+					if (_map.TextValueMappings != null && _map.TextValueMappings.ContainsKey(key) && _map.TextValueMappings[key].Count > 0)
+					{
+						var closest = _map.TextValueMappings[key]
+							.OrderBy(kv => Math.Abs(kv.Key - avg))
+							.FirstOrDefault();
+						displayValue = closest.Value ?? Math.Round(avg, 2).ToString();
+					}
+					else
+					{
+						displayValue = Math.Round(avg, 2).ToString();
+					}
+					tableRows.Add(new { Value = displayValue, Parameter = key });
 				}
+				StatisticsDataGrid.ItemsSource = tableRows;
 			}
 			else
 			{
-				StatisticsListView.Items.Clear();
+				StatisticsDataGrid.ItemsSource = null;
 				StatisticsGrid.Visibility = Visibility.Collapsed;
 			}
 		}
@@ -382,7 +424,7 @@ namespace SOM_Kohonen_WpfApp.Views
 			}
 			else if (value >= 10 && value < 20)
 			{
-				return ColorTranslator.FromHtml("#346beb");
+				return ColorTranslator.FromHtml("#346ceb");
 			}
 			else if (value >= 20 && value < 40)
 			{
