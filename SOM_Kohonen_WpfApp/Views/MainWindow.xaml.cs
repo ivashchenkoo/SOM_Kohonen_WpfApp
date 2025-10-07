@@ -469,23 +469,11 @@ namespace SOM_Kohonen_WpfApp.Views
 		private void AnalyzeAndMarkLowInfluenceFeatures()
 		{
 			if (_map == null) return;
-			// 1. Calculate variance for each feature
-			var variances = _map.CalculateFeatureVariance();
-			if (variances.Count == 0) return;
 
-			// Dynamically set threshold so that about 15–20% of features are marked as low influence
-			// Sort variances and use the 20th percentile as the cutoff
-			var sortedVars = variances.OrderBy(kv => kv.Value).ToList();
-			int n = sortedVars.Count;
-			int cutoffIndex = (int)Math.Ceiling(n * 0.2) - 1; // 20th percentile
-			if (cutoffIndex < 0) cutoffIndex = 0;
-			double threshold = sortedVars[cutoffIndex].Value;
-			// Only features with variance <= threshold are marked as low influence
+			// 1. Identify low-influence features
+			var lowImpact = AnalyzeLowInfluenceFeatures();
 
-			// 2. Identify low-influence features
-			var lowImpact = variances.Where(kv => kv.Value <= threshold).Select(kv => kv.Key).ToList();
-
-			// 3. Mark in UI: change label color and add tag for low-influence features
+			// 2. Mark in UI: change label color and add tag for low-influence features
 			bool anyMarked = false;
 			foreach (var child in MainGrid.Children)
 			{
@@ -506,11 +494,32 @@ namespace SOM_Kohonen_WpfApp.Views
 				}
 			}
 
-			// 4. Show message if none found
+			// 3. Show message if none found
 			if (!anyMarked)
 			{
 				MessageBox.Show("No parameters with low influence were found.", "Feature Reduction", MessageBoxButton.OK, MessageBoxImage.Information);
 			}
+		}
+
+		private List<string> AnalyzeLowInfluenceFeatures()
+		{
+			if (_map == null) return new List<string>();
+
+			// 1. Calculate variance for each feature
+			var variances = _map.CalculateFeatureVariance();
+			if (variances.Count == 0) return new List<string>();
+
+			// Dynamically set threshold so that about 20% of features are marked as low influence
+			// Sort variances and use the 20% as the cutoff
+			var sortedVars = variances.OrderBy(kv => kv.Value).ToList();
+			int n = sortedVars.Count;
+			int cutoffIndex = (int)Math.Ceiling(n * 0.2) - 1; // 20%
+			if (cutoffIndex < 0) cutoffIndex = 0;
+			double threshold = sortedVars[cutoffIndex].Value;
+
+			// 2. Identify low-influence features based on the provided threshold
+			var lowImpact = variances.Where(kv => kv.Value <= threshold).Select(kv => kv.Key).ToList();
+			return lowImpact;
 		}
 
 		#endregion
