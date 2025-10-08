@@ -96,7 +96,7 @@ namespace SOM_Kohonen_WpfApp.Views
 			if (inputColumns.Count == 0 || string.IsNullOrEmpty(xyColumn))
 				return;
 
-			 // Calculate max value for each input column
+			// Calculate max value for each input column
 			var maxValues = new Dictionary<string, double>();
 			foreach (var col in inputColumns)
 			{
@@ -146,13 +146,13 @@ namespace SOM_Kohonen_WpfApp.Views
 				// Statistica index starts from 1
 				x--;
 				y--;
-	
+
 				var weights = new DataCollection();
 				foreach (var col in inputColumns)
 				{
 					if (row.ContainsKey(col))
 					{
-						weights.Add(new SOM_Kohonen_WpfApp.Models.DataModel
+						weights.Add(new DataModel
 						{
 							Key = col,
 							Value = row[col],
@@ -160,7 +160,7 @@ namespace SOM_Kohonen_WpfApp.Views
 						});
 					}
 				}
-				map[x, y] = new SOM_Kohonen_WpfApp.SOM.Node(x, y, weights);
+				map[x, y] = new Node(x, y, weights);
 			}
 			_map = map;
 		}
