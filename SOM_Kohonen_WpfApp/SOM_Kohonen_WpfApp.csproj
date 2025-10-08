@@ -105,6 +105,9 @@
     <Compile Include="Views\SOMWizardWindow.xaml.cs">
       <DependentUpon>SOMWizardWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Views\StatisticaDataConverterWindow.xaml.cs">
+      <DependentUpon>StatisticaDataConverterWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\TextMappingsWindow.xaml.cs">
       <DependentUpon>TextMappingsWindow.xaml</DependentUpon>
     </Compile>
@@ -132,6 +135,10 @@
       <SubType>Code</SubType>
     </Compile>
     <Page Include="Views\SOMWizardWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\StatisticaDataConverterWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

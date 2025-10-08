@@ -33,6 +33,7 @@
 
             <MenuItem Header="_Tools">
                 <MenuItem Header="SOM Wizard" Click="New_Click"/>
+                <MenuItem Header="Statistica Data Converter" Click="STConverter_Click"/>
             </MenuItem>
 
             <MenuItem Header="_View" x:Name="ViewMenu">

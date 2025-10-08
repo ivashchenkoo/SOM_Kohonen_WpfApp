@@ -29,7 +29,7 @@
         
         <Grid x:Name="ImportSettingsGrid"
               Margin="10"
-              Visibility="Collapsed">
+              Visibility="Visible">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -100,7 +100,7 @@
             
         </Grid>
 
-        <Grid x:Name="NNTrainGrid"
+        <Grid x:Name="NNTrainGrid" Visibility="Collapsed"
               Margin="10">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>

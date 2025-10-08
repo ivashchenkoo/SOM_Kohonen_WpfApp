@@ -3,6 +3,7 @@
     public enum InputOption
     {
         Input,
-        Info
+        Info,
+        XY
     }
 }

@@ -364,14 +364,28 @@ namespace SOM_Kohonen_WpfApp.Views
 				for (int y = 0; y < map.Height; y++)
 				{
 					Node mapNode = map[x, y];
-					for (int i = 0; i < mapNode.Weights.Count; i++)
+					if (mapNode == null || mapNode.Weights == null || mapNode.Weights.Count == 0)
 					{
-						Grid grid = CreateGrid(ConvertColor(GetColor((int)(mapNode.Weights[i].GetDoubleValue() / mapNode.Weights[i].MaxCollectionValue * 255))));
-						grid.Margin = new Thickness(0, 0, x + 1 != map.Width ? 1 : 0, y + 1 != map.Height ? 1 : 0);
-						grid.MouseDown += NodeGrid_MouseDown;
-						Grid.SetColumn(grid, x);
-						Grid.SetRow(grid, y);
-						gridNodes[i].Children.Add(grid);
+						for (int i = 0; i < map.Depth; i++)
+						{
+							Grid grid = CreateGrid(ConvertColor(ColorTranslator.FromHtml("#e6e6e6")));
+							grid.Margin = new Thickness(0, 0, x + 1 != map.Width ? 1 : 0, y + 1 != map.Height ? 1 : 0);
+							Grid.SetColumn(grid, x);
+							Grid.SetRow(grid, y);
+							gridNodes[i].Children.Add(grid);
+						}
+					}
+					else
+					{
+						for (int i = 0; i < mapNode.Weights.Count; i++)
+						{
+							Grid grid = CreateGrid(ConvertColor(GetColor((int)(mapNode.Weights[i].GetDoubleValue() / mapNode.Weights[i].MaxCollectionValue * 255))));
+							grid.Margin = new Thickness(0, 0, x + 1 != map.Width ? 1 : 0, y + 1 != map.Height ? 1 : 0);
+							grid.MouseDown += NodeGrid_MouseDown;
+							Grid.SetColumn(grid, x);
+							Grid.SetRow(grid, y);
+							gridNodes[i].Children.Add(grid);
+						}
 					}
 				}
 			}
@@ -527,5 +541,16 @@ namespace SOM_Kohonen_WpfApp.Views
 		}
 
 		#endregion
+
+		private async void STConverter_Click(object sender, RoutedEventArgs e)
+		{
+			StatisticaDataConverterWindow wizard = new StatisticaDataConverterWindow
+			{
+				Owner = this
+			};
+			wizard.Show();
+			_map = await wizard.FetchAsync();
+			GenerateGrid(_map);
+		}
 	}
 }
