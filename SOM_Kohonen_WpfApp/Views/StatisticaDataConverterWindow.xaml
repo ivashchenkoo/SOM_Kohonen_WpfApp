@@ -36,11 +36,12 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <Label Grid.Row="0"
-                   Margin="0,0,0,10"
-                   FontWeight="Bold">
-                _Import Settings
-            </Label>
+            <TextBlock Grid.Row="0"
+                       Margin="0,0,0,10"
+                       FontWeight="Bold"
+                       TextWrapping="Wrap">
+                This wizard allows importing exported data from STATISTICA, obtained from a Kohonen map, and visualizing them on Kohonen maps within this application.
+            </TextBlock>
 
             <Grid Grid.Row="1">
                 <Grid.ColumnDefinitions>
