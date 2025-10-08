@@ -56,10 +56,10 @@
     <ApplicationIcon>Resources\icon.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestCertificateThumbprint>5A8FC04116FFD6DA8A247DBAC2DBB102A265D807</ManifestCertificateThumbprint>
+    <ManifestCertificateThumbprint>21A6AEE0F0A57FCB3E84EFCEA5312B4EA0076597</ManifestCertificateThumbprint>
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestKeyFile>SOM_Kohonen_WpfApp_3_TemporaryKey.pfx</ManifestKeyFile>
+    <ManifestKeyFile>SOM_Kohonen_WpfApp_2_TemporaryKey.pfx</ManifestKeyFile>
   </PropertyGroup>
   <PropertyGroup>
     <GenerateManifests>true</GenerateManifests>

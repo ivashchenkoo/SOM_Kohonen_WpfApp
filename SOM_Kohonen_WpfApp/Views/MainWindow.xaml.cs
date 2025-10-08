@@ -501,6 +501,10 @@ namespace SOM_Kohonen_WpfApp.Views
 			}
 		}
 
+		/// <summary>
+		/// Identifies low influence features, based on lowest 20% variance across all nodes.
+		/// </summary>
+		/// <returns>List of feature names with low influence on the map.</returns>
 		private List<string> AnalyzeLowInfluenceFeatures()
 		{
 			if (_map == null) return new List<string>();

@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Animation;
 using Microsoft.Win32;
@@ -228,9 +229,15 @@ namespace SOM_Kohonen_WpfApp.Views
 
         private void Preview_TextInputInteger(object sender, TextCompositionEventArgs e)
         {
-            Regex regex = new Regex("[0-9]+");
-            e.Handled = !regex.IsMatch(e.Text);
-        }
+			TextBox textBox = sender as TextBox;
+
+			// Текст, який буде після вставки нового символу
+			string newText = textBox.Text.Insert(textBox.SelectionStart, e.Text);
+
+			// Дозволяємо мінус на початку і цифри далі
+			Regex regex = new Regex(@"^-?\d*$");
+			e.Handled = !regex.IsMatch(newText);
+		}
 
         private void Preview_TextInputDouble(object sender, TextCompositionEventArgs e)
         {
