@@ -101,6 +101,7 @@
     <Compile Include="Models\Settings\DataColumn.cs" />
     <Compile Include="Models\Settings\InputOption.cs" />
     <Compile Include="Service\RandomGenerator.cs" />
+    <Compile Include="SOM\NodeType.cs" />
     <Compile Include="Views\ParameterToPastelBrushConverter.cs" />
     <Compile Include="Views\SOMWizardWindow.xaml.cs">
       <DependentUpon>SOMWizardWindow.xaml</DependentUpon>
