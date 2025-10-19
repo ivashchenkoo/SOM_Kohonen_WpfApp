@@ -95,7 +95,7 @@ namespace SOM_Kohonen_WpfApp.Views
 							for (int y = startY; y < endY; y++)
 							{
 								Node nodeToAdjust = map[x, y];
-								double distanceSquared = bestMatchingNode.DistanceToSquared(nodeToAdjust);
+								double distanceSquared = bestMatchingNode.DistanceToSquared(nodeToAdjust, map.NodeType);
 
 								// Perform a filter to get only the nodes in the neighborhood
 								if (distanceSquared <= neighborhoodRadiusSquared)
@@ -309,9 +309,17 @@ namespace SOM_Kohonen_WpfApp.Views
 			{
 				seed = (int)DateTime.Now.Ticks;
 				SeedTextBox.Text = seed.ToString();
-			}
+				}
 
-			_map = new Map(width: width < 0 ? 24 : width, height: height < 0 ? 18 : height, seed);
+            // Get node type from ComboBox
+            NodeType nodeType = NodeType.Square;
+            if (NodeTypeComboBox.SelectedItem is ComboBoxItem selectedItem)
+            {
+                if (selectedItem.Content.ToString() == "Hexagonal")
+                    nodeType = NodeType.Hexagonal;
+            }
+
+			_map = new Map(width: width < 0 ? 24 : width, height: height < 0 ? 18 : height, seed, nodeType);
 			_map.TextValueMappings = textValueMappings;
 
 			_map.Initialize(dataModels, inputColumns);

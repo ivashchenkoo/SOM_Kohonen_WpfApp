@@ -5,6 +5,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Shapes;
 using Microsoft.Win32;
 using SOM_Kohonen_WpfApp.Models;
 using SOM_Kohonen_WpfApp.Service;
@@ -432,11 +433,10 @@ namespace SOM_Kohonen_WpfApp.Views
 						for (int i = 0; i < map.Depth; i++)
 						{
 							Grid inner = CreateGrid(ColorFromHex("#e6e6e6"));
-							Border cell = CreateCellBorder(inner);
-							cell.Margin = new Thickness(0, 0, x + 1 != map.Width ? 1 : 0, y + 1 != map.Height ? 1 : 0);
+							Border cell = map.NodeType == NodeType.Hexagonal ? CreateCellBorderHex(inner) : CreateCellBorder(inner);
+							cell.Margin = map.NodeType == NodeType.Hexagonal ? new Thickness(0) : new Thickness(0, 0, x + 1 != map.Width ? 1 : 0, y + 1 != map.Height ? 1 : 0);
 							Grid.SetColumn(cell, x);
 							Grid.SetRow(cell, y);
-							// add click handler to border
 							cell.MouseDown += NodeGrid_MouseDown;
 							cell.MouseEnter += NodeGrid_MouseEnter;
 							gridNodes[i].Children.Add(cell);
@@ -451,8 +451,8 @@ namespace SOM_Kohonen_WpfApp.Views
 							double ratio = maxVal == 0 ? 0 : val / maxVal; // 0..1
 							Color color = GetHeatMapColor(ratio);
 							Grid inner = CreateGrid(color);
-							Border cell = CreateCellBorder(inner);
-							cell.Margin = new Thickness(0, 0, x + 1 != map.Width ? 1 : 0, y + 1 != map.Height ? 1 : 0);
+							Border cell = map.NodeType == NodeType.Hexagonal ? CreateCellBorderHex(inner) : CreateCellBorder(inner);
+							cell.Margin = map.NodeType == NodeType.Hexagonal ? new Thickness(0) : new Thickness(0, 0, x + 1 != map.Width ? 1 : 0, y + 1 != map.Height ? 1 : 0);
 							Grid.SetColumn(cell, x);
 							Grid.SetRow(cell, y);
 							cell.MouseDown += NodeGrid_MouseDown;
@@ -494,6 +494,32 @@ namespace SOM_Kohonen_WpfApp.Views
 				Padding = new Thickness(0),
 				Tag = originalBrush // store for restore
 			};
+			return cell;
+		}
+
+		private Border CreateCellBorderHex(Grid inner)
+		{
+			var cell = new Border
+			{
+				Child = inner,
+				BorderBrush = Brushes.Transparent,
+				BorderThickness = new Thickness(0),
+				Padding = new Thickness(0),
+				Tag = inner.Background as SolidColorBrush
+			};
+			// Add hexagon shape overlay
+			var hex = new Polygon
+			{
+				Stroke = Brushes.Gray,
+				StrokeThickness = 1,
+				Fill = inner.Background,
+				Points = new PointCollection {
+					new Point(5, 0), new Point(10, 2.5), new Point(10, 7.5), new Point(5, 10), new Point(0, 7.5), new Point(0, 2.5)
+				}
+			};
+			var grid = new Grid();
+			grid.Children.Add(hex);
+			cell.Child = grid;
 			return cell;
 		}
 

@@ -6,13 +6,22 @@ using SOM_Kohonen_WpfApp.Service;
 
 namespace SOM_Kohonen_WpfApp.SOM
 {
+	public enum NodeType
+	{
+		Square,
+		Hexagonal
+	}
+
 	[Serializable()]
 	public class Map
 	{
-		public Map(int width, int height, int seed)
+		public NodeType NodeType { get; set; }
+
+		public Map(int width, int height, int seed, NodeType nodeType = NodeType.Square)
 		{
 			Grid = new Node[width, height];
 			Seed = seed;
+			NodeType = nodeType;
 		}
 
 		#region Properties

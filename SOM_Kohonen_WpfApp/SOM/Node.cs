@@ -36,15 +36,24 @@ namespace SOM_Kohonen_WpfApp.SOM
 
 		/// <summary>
 		/// Returns the distance between this Node and the specified Node.
-		/// Based on the standard Euclidean distance function.
-		/// <returns>
-		/// Returns the sum of the squares of the differences between this nodes X and Y to the other nodes X and Y properties.
-		/// </returns>
-		public double DistanceToSquared(Node node)
+		/// Based on the standard Euclidean distance function for squares.
+		/// </summary>
+		public double DistanceToSquared(Node node, NodeType nodeType = NodeType.Square)
 		{
 			int differenceX = X - node.X;
 			int differenceY = Y - node.Y;
-
+			if (nodeType == NodeType.Hexagonal)
+			{
+				// Hex grid distance (cube coordinates)
+				// Convert (x, y) to cube coordinates
+				int x1 = X - (Y / 2);
+				int z1 = Y;
+				int y1 = -x1 - z1;
+				int x2 = node.X - (node.Y / 2);
+				int z2 = node.Y;
+				int y2 = -x2 - z2;
+				return Math.Pow(Math.Max(Math.Abs(x1 - x2), Math.Max(Math.Abs(y1 - y2), Math.Abs(z1 - z2))), 2);
+			}
 			return (differenceX * differenceX) + (differenceY * differenceY);
 		}
 

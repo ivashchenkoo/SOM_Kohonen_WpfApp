@@ -120,6 +120,7 @@
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
                 <Label Grid.Row="0"
@@ -230,6 +231,21 @@
                           IsChecked="True">
                     Show Data Reduction
                 </CheckBox>
+
+                <Label Grid.Row="34"
+                       Grid.Column="0"
+                       HorizontalContentAlignment="Right">
+                    Node type
+                </Label>
+                <ComboBox x:Name="NodeTypeComboBox"
+                          Grid.Row="4"
+                          Grid.Column="1"
+                          VerticalContentAlignment="Center"
+                          Margin="0,0,10,0"
+                          SelectedIndex="0">
+                    <ComboBoxItem Content="Square" />
+                    <ComboBoxItem Content="Hexagonal" />
+                </ComboBox>
 
             </Grid>
 
