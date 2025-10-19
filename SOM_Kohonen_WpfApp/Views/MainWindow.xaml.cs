@@ -358,10 +358,12 @@ namespace SOM_Kohonen_WpfApp.Views
 
 			MapSeedLabel.Content = $"Map seed: {map.Seed}";
 
-			List<Grid> gridNodes = new List<Grid>();
+			List<FrameworkElement> gridNodes = new List<FrameworkElement>();
+			double hexWidth = 15; // width of hexagon
+			double hexHeight = Math.Sqrt(3) / 2 * hexWidth; // height of hexagon
 			for (int i = 0; i < _map[0, 0].Weights.Count; i++)
 			{
-				Grid grid = CreateGrid(Colors.Gray, map.Width * 10, map.Height * 10);
+				FrameworkElement grid;
 				string mapKey = _map[0, 0].Weights[i].Key; // Use original key for display
 				string sanitizedKey = SanitizeColumnName(mapKey); // Only for UI element names
 
@@ -375,13 +377,38 @@ namespace SOM_Kohonen_WpfApp.Views
 				menuItem.Click += ColumnsVisibilityMenuItem_Click;
 				ViewMenu.Items.Add(menuItem);
 
-				for (int x = 0; x < map.Width; x++)
+				int gridWidth;
+				int gridHeight;
+
+				if (map.NodeType == NodeType.Hexagonal)
 				{
-					grid.ColumnDefinitions.Add(new ColumnDefinition());
+					// Use Canvas for hexagonal layout
+					gridWidth = (int)(map.Width * hexWidth + hexWidth / 2);
+					gridHeight = (int)((map.Height + 0.4) * hexHeight);
+					Canvas canvas = new Canvas
+					{
+						Width = gridWidth,
+						Height = gridHeight,
+						HorizontalAlignment = HorizontalAlignment.Left,
+						VerticalAlignment = VerticalAlignment.Top,
+						Background = new SolidColorBrush(Colors.Transparent)
+					};
+					grid = canvas;
 				}
-				for (int y = 0; y < map.Height; y++)
+				else
 				{
-					grid.RowDefinitions.Add(new RowDefinition());
+					gridWidth = map.Width * 10;
+					gridHeight = map.Height * 10;
+					Grid gridSquare = CreateGrid(Colors.Gray, gridWidth, gridHeight);
+					for (int x = 0; x < map.Width; x++)
+					{
+						gridSquare.ColumnDefinitions.Add(new ColumnDefinition());
+					}
+					for (int y = 0; y < map.Height; y++)
+					{
+						gridSquare.RowDefinitions.Add(new RowDefinition());
+					}
+					grid = gridSquare;
 				}
 				gridNodes.Add(grid);
 
@@ -398,8 +425,8 @@ namespace SOM_Kohonen_WpfApp.Views
 
 				StackPanel stackPanel = new StackPanel
 				{
-					MinWidth = map.Width * 10,
-					MaxWidth = map.Width * 10,
+					MinWidth = gridWidth,
+					MaxWidth = gridHeight,
 					Orientation = Orientation.Vertical
 				};
 
@@ -411,7 +438,8 @@ namespace SOM_Kohonen_WpfApp.Views
 					BorderThickness = new Thickness(4),
 					BorderBrush = new SolidColorBrush(Colors.LightGray),
 					Child = stackPanel,
-					Margin = new Thickness(5)
+					Margin = new Thickness(5),
+					Padding = new Thickness(2, 0, 2, 2)
 				};
 
 				MainGrid.Children.Add(border);
@@ -428,36 +456,58 @@ namespace SOM_Kohonen_WpfApp.Views
 				for (int y = 0; y < map.Height; y++)
 				{
 					Node mapNode = map[x, y];
-					if (mapNode == null || mapNode.Weights == null || mapNode.Weights.Count == 0)
+					for (int i = 0; i < map.Depth; i++)
 					{
-						for (int i = 0; i < map.Depth; i++)
+						if (map.NodeType == NodeType.Hexagonal)
 						{
-							Grid inner = CreateGrid(ColorFromHex("#e6e6e6"));
-							Border cell = map.NodeType == NodeType.Hexagonal ? CreateCellBorderHex(inner) : CreateCellBorder(inner);
-							cell.Margin = map.NodeType == NodeType.Hexagonal ? new Thickness(0) : new Thickness(0, 0, x + 1 != map.Width ? 1 : 0, y + 1 != map.Height ? 1 : 0);
-							Grid.SetColumn(cell, x);
-							Grid.SetRow(cell, y);
+							double xOffset = (y % 2 == 0) ? 0 : hexWidth / 2;
+							double left = x * hexWidth + xOffset;
+							double top = y * hexHeight;
+							Grid inner;
+							if (mapNode == null || mapNode.Weights == null || mapNode.Weights.Count == 0)
+							{
+								inner = CreateGrid(ColorFromHex("#e6e6e6"), (int)hexWidth, (int)hexHeight);
+							}
+							else
+							{
+								double maxVal = mapNode.Weights[i].MaxCollectionValue;
+								double val = mapNode.Weights[i].GetDoubleValue();
+								double ratio = maxVal == 0 ? 0 : val / maxVal; // 0..1
+								Color color = GetHeatMapColor(ratio);
+								inner = CreateGrid(color, (int)hexWidth, (int)hexHeight);
+							}
+							Border cell = CreateCellBorderHex(inner, hexWidth);
 							cell.MouseDown += NodeGrid_MouseDown;
 							cell.MouseEnter += NodeGrid_MouseEnter;
-							gridNodes[i].Children.Add(cell);
+							// Store coordinates for selection/statistics
+							cell.SetValue(Grid.ColumnProperty, x);
+							cell.SetValue(Grid.RowProperty, y);
+							Canvas.SetLeft(cell, left);
+							Canvas.SetTop(cell, top);
+							((Canvas)gridNodes[i]).Children.Add(cell);
 						}
-					}
-					else
-					{
-						for (int i = 0; i < mapNode.Weights.Count; i++)
+						else
 						{
-							double maxVal = mapNode.Weights[i].MaxCollectionValue;
-							double val = mapNode.Weights[i].GetDoubleValue();
-							double ratio = maxVal == 0 ? 0 : val / maxVal; // 0..1
-							Color color = GetHeatMapColor(ratio);
-							Grid inner = CreateGrid(color);
-							Border cell = map.NodeType == NodeType.Hexagonal ? CreateCellBorderHex(inner) : CreateCellBorder(inner);
-							cell.Margin = map.NodeType == NodeType.Hexagonal ? new Thickness(0) : new Thickness(0, 0, x + 1 != map.Width ? 1 : 0, y + 1 != map.Height ? 1 : 0);
+							Grid inner;
+							if (mapNode == null || mapNode.Weights == null || mapNode.Weights.Count == 0)
+							{
+								inner = CreateGrid(ColorFromHex("#e6e6e6"));
+							}
+							else
+							{
+								double maxVal = mapNode.Weights[i].MaxCollectionValue;
+								double val = mapNode.Weights[i].GetDoubleValue();
+								double ratio = maxVal == 0 ? 0 : val / maxVal; // 0..1
+								Color color = GetHeatMapColor(ratio);
+								inner = CreateGrid(color);
+							}
+							Border cell = CreateCellBorder(inner);
+							cell.Margin = new Thickness(0, 0, x + 1 != map.Width ? 1 : 0, y + 1 != map.Height ? 1 : 0);
 							Grid.SetColumn(cell, x);
 							Grid.SetRow(cell, y);
 							cell.MouseDown += NodeGrid_MouseDown;
 							cell.MouseEnter += NodeGrid_MouseEnter;
-							gridNodes[i].Children.Add(cell);
+							((Grid)gridNodes[i]).Children.Add(cell);
 						}
 					}
 				}
@@ -497,7 +547,7 @@ namespace SOM_Kohonen_WpfApp.Views
 			return cell;
 		}
 
-		private Border CreateCellBorderHex(Grid inner)
+		private Border CreateCellBorderHex(Grid inner, double size = 10)
 		{
 			var cell = new Border
 			{
@@ -512,11 +562,23 @@ namespace SOM_Kohonen_WpfApp.Views
 			{
 				Stroke = Brushes.Gray,
 				StrokeThickness = 1,
-				Fill = inner.Background,
-				Points = new PointCollection {
-					new Point(5, 0), new Point(10, 2.5), new Point(10, 7.5), new Point(5, 10), new Point(0, 7.5), new Point(0, 2.5)
-				}
+				Fill = inner.Background
 			};
+
+			// Calculate the coordinates of the hexagon
+			// Center at (size / 2, size / 2), height = size, width ≈ size * sqrt(3) / 2
+			double width = Math.Sqrt(3) / 2 * size;
+
+			hex.Points = new PointCollection
+{
+	new Point(width / 2, 0),                  // top point
+    new Point(width, size / 4),               // top-right
+    new Point(width, 3 * size / 4),           // bottom-right
+    new Point(width / 2, size),               // bottom
+    new Point(0, 3 * size / 4),               // bottom-left
+    new Point(0, size / 4)                    // top-left
+};
+
 			var grid = new Grid();
 			grid.Children.Add(hex);
 			cell.Child = grid;
@@ -661,9 +723,23 @@ namespace SOM_Kohonen_WpfApp.Views
 			if (inner == null) return;
 			var original = cell.Tag as SolidColorBrush;
 			if (original == null) return;
-			var bright = new SolidColorBrush(BlendColors(original.Color, Colors.White, 0.25));
-			inner.Background = bright;
-			cell.BorderBrush = new SolidColorBrush(Colors.Black);
+
+			// Hexagonal selection: overlay hex border only, no fill, no background highlight
+			if (_map != null && _map.NodeType == NodeType.Hexagonal)
+			{
+				inner.Background = Brushes.Transparent;
+				// Remove any previous selection border
+				var oldHex = inner.Children.OfType<Polygon>().FirstOrDefault(p => (string)p.Tag == "HexSelectionBorder");
+				if (oldHex != null) inner.Children.Remove(oldHex);
+				// The actual border will be drawn in UpdateSelectionBorders
+				cell.BorderBrush = Brushes.Transparent;
+			}
+			else
+			{
+				var bright = new SolidColorBrush(BlendColors(original.Color, Colors.White, 0.25));
+				inner.Background = bright;
+				cell.BorderBrush = new SolidColorBrush(Colors.Black);
+			}
 		}
 
 		private void DeselectNode(Border cell)
@@ -672,39 +748,125 @@ namespace SOM_Kohonen_WpfApp.Views
 			var inner = cell.Child as Grid;
 			if (inner == null) return;
 			var original = cell.Tag as SolidColorBrush;
-			if (original != null)
+			if (_map != null && _map.NodeType == NodeType.Hexagonal)
 			{
-				inner.Background = original;
+				// Remove all selection border overlays (Polylines/Polygons with tag)
+				var toRemove = inner.Children.OfType<UIElement>()
+					.Where(e => (e is Polyline || e is Polygon) && (string)((dynamic)e).Tag == "HexSelectionBorder")
+					.ToList();
+				foreach (var el in toRemove)
+					inner.Children.Remove(el);
+				// Remove all children except the original hexagon Polygon
+				var hexagon = inner.Children.OfType<Polygon>().FirstOrDefault(p => p.Stroke == Brushes.Gray);
+				inner.Children.Clear();
+				if (hexagon != null)
+				{
+					inner.Children.Add(hexagon);
+					hexagon.Fill = original ?? Brushes.Transparent;
+				}
+				cell.BorderBrush = Brushes.Transparent;
+				cell.BorderThickness = new Thickness(0);
 			}
-			cell.BorderBrush = Brushes.Transparent;
-			cell.BorderThickness = new Thickness(0);
+			else
+			{
+				if (original != null)
+				{
+					inner.Background = original;
+				}
+				cell.BorderBrush = Brushes.Transparent;
+				cell.BorderThickness = new Thickness(0);
+			}
 		}
 
-		// Recompute border thickness for all selected nodes so internal borders are hidden
+		// Recompute border for all selected nodes so internal borders are hidden (hex version)
 		private void UpdateSelectionBorders()
 		{
-			int highlightThickness = 2;
-			var set = new HashSet<(int x, int y)>();
-			foreach (var b in _selectedNodes)
+			if (_map != null && _map.NodeType == NodeType.Hexagonal)
 			{
-				set.Add((Grid.GetColumn(b), Grid.GetRow(b)));
+				// Remove all selection borders first
+				foreach (var b in _selectedNodes)
+				{
+					var inner = b.Child as Grid;
+					if (inner == null) continue;
+					var toRemove = inner.Children.OfType<UIElement>()
+						.Where(e => (e is Polyline || e is Polygon) && (string)((dynamic)e).Tag == "HexSelectionBorder")
+						.ToList();
+					foreach (var el in toRemove)
+						inner.Children.Remove(el);
+				}
+				// Points for a flat-topped hexagon in strict clockwise order starting from top
+				// 0: top, 1: top-right, 2: bottom-right, 3: bottom, 4: bottom-left, 5: top-left
+				// Directions for even-q vertical layout, matching the points order
+				int[][] evenDirs = new int[][] { new[] { 0, -1 }, new[] { 1, -1 }, new[] { 1, 0 }, new[] { 0, 1 }, new[] { -1, 0 }, new[] { -1, -1 } };
+				int[][] oddDirs = new int[][] { new[] { 0, -1 }, new[] { 1, 0 }, new[] { 1, 1 }, new[] { 0, 1 }, new[] { -1, 1 }, new[] { -1, 0 } };
+				var set = new HashSet<(int x, int y)>();
+				foreach (var b in _selectedNodes)
+				{
+					set.Add((Grid.GetColumn(b), Grid.GetRow(b)));
+				}
+				foreach (var b in _selectedNodes)
+				{
+					int x = Grid.GetColumn(b);
+					int y = Grid.GetRow(b);
+					var inner = b.Child as Grid;
+					if (inner == null) continue;
+					double size = inner.Width > 0 ? inner.Width : 15;
+					double width = Math.Sqrt(3) / 2 * size;
+					// Points in strict clockwise order (flat-topped)
+					var points = new[]
+					{
+						new Point(width / 2, 0), // 0 top
+						new Point(width, size / 4), // 1 top-right
+						new Point(width, 3 * size / 4), // 2 bottom-right
+						new Point(width / 2, size), // 3 bottom
+						new Point(0, 3 * size / 4), // 4 bottom-left
+						new Point(0, size / 4) // 5 top-left
+					};
+					var dirs = (y % 2 == 0) ? evenDirs : oddDirs;
+					for (int i = 0; i < 6; i++)
+					{
+						int nx = x + dirs[i][0];
+						int ny = y + dirs[i][1];
+						if (!set.Contains((nx, ny)))
+						{
+							var poly = new Polyline
+							{
+								Stroke = Brushes.Black,
+								StrokeThickness = 2,
+								Points = new PointCollection { points[i], points[(i + 1) % 6] },
+								Tag = "HexSelectionBorder"
+							};
+							inner.Children.Add(poly);
+						}
+					}
+					b.BorderBrush = Brushes.Transparent;
+					b.BorderThickness = new Thickness(0);
+				}
 			}
-
-			foreach (var b in _selectedNodes)
+			else
 			{
-				int x = Grid.GetColumn(b);
-				int y = Grid.GetRow(b);
-				bool left = set.Contains((x - 1, y));
-				bool right = set.Contains((x + 1, y));
-				bool top = set.Contains((x, y - 1));
-				bool bottom = set.Contains((x, y + 1));
+				int highlightThickness = 2;
+				var set = new HashSet<(int x, int y)>();
+				foreach (var b in _selectedNodes)
+				{
+					set.Add((Grid.GetColumn(b), Grid.GetRow(b)));
+				}
+				foreach (var b in _selectedNodes)
+				{
+					int x = Grid.GetColumn(b);
+					int y = Grid.GetRow(b);
+					bool left = set.Contains((x - 1, y));
+					bool right = set.Contains((x + 1, y));
+					bool top = set.Contains((x, y - 1));
+					bool bottom = set.Contains((x, y + 1));
 
-				double leftT = left ? 0 : highlightThickness;
-				double topT = top ? 0 : highlightThickness;
-				double rightT = right ? 0 : highlightThickness;
-				double bottomT = bottom ? 0 : highlightThickness;
-				b.BorderThickness = new Thickness(leftT, topT, rightT, bottomT);
-				b.BorderBrush = new SolidColorBrush(Colors.Black);
+					double leftT = left ? 0 : highlightThickness;
+					double topT = top ? 0 : highlightThickness;
+					double rightT = right ? 0 : highlightThickness;
+					double bottomT = bottom ? 0 : highlightThickness;
+					b.BorderThickness = new Thickness(leftT, topT, rightT, bottomT);
+					b.BorderBrush = new SolidColorBrush(Colors.Black);
+				}
 			}
 		}
 
