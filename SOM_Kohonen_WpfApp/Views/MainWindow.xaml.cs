@@ -22,6 +22,10 @@ namespace SOM_Kohonen_WpfApp.Views
 		// store selected borders instead of raw grids
 		private readonly List<Border> _selectedNodes = new List<Border>();
 
+		// Drag selection state
+		private bool _isMouseDown = false;
+		private bool _dragSelectMode = true; // true: select, false: deselect
+
 		public MainWindow()
 		{
 			InitializeComponent();
@@ -37,6 +41,9 @@ namespace SOM_Kohonen_WpfApp.Views
 				}
 			}
 			catch (Exception) { }
+
+			// Listen for mouse up globally to end drag
+			this.PreviewMouseUp += MainWindow_MouseUp;
 		}
 
 		#region Events
@@ -135,17 +142,63 @@ namespace SOM_Kohonen_WpfApp.Views
 			// sender is a Border now
 			var border = sender as Border;
 			if (border == null) return;
+			_isMouseDown = true;
 			if (_selectedNodes.Contains(border))
 			{
+				_dragSelectMode = false;
 				DeselectNode(border);
 				_selectedNodes.Remove(border);
 			}
 			else
 			{
+				_dragSelectMode = true;
 				SelectNode(border);
 				_selectedNodes.Add(border);
 			}
 			// After toggling selection, adjust the outlines for neighboring selections
+			UpdateSelectionBorders();
+			UpdateStatistics();
+		}
+
+		private void NodeGrid_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
+		{
+			if (!_isMouseDown) return;
+			var border = sender as Border;
+			if (border == null) return;
+			if (_dragSelectMode)
+			{
+				if (!_selectedNodes.Contains(border))
+				{
+					SelectNode(border);
+					_selectedNodes.Add(border);
+					UpdateSelectionBorders();
+					UpdateStatistics();
+				}
+			}
+			else
+			{
+				if (_selectedNodes.Contains(border))
+				{
+					DeselectNode(border);
+					_selectedNodes.Remove(border);
+					UpdateSelectionBorders();
+					UpdateStatistics();
+				}
+			}
+		}
+
+		private void MainWindow_MouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+		{
+			_isMouseDown = false;
+		}
+
+		private void ClearSelection_Click(object sender, RoutedEventArgs e)
+		{
+			foreach (var border in _selectedNodes.ToList())
+			{
+				DeselectNode(border);
+			}
+			_selectedNodes.Clear();
 			UpdateSelectionBorders();
 			UpdateStatistics();
 		}
@@ -288,6 +341,15 @@ namespace SOM_Kohonen_WpfApp.Views
 			ViewMenu.Items.Add(showMapSeedMenuItem);
 			ViewMenu.Items.Add(new Separator());
 
+			// Add Clear Selection button
+			MenuItem clearSelectionMenuItem = new MenuItem
+			{
+				Header = "Clear Selection"
+			};
+			clearSelectionMenuItem.Click += ClearSelection_Click;
+			ViewMenu.Items.Add(clearSelectionMenuItem);
+			ViewMenu.Items.Add(new Separator());
+
 			if (Properties.Settings.Default.ShowMapSeedInResults)
 			{
 				MapSeedLabel.Visibility = Visibility.Visible;
@@ -376,6 +438,7 @@ namespace SOM_Kohonen_WpfApp.Views
 							Grid.SetRow(cell, y);
 							// add click handler to border
 							cell.MouseDown += NodeGrid_MouseDown;
+							cell.MouseEnter += NodeGrid_MouseEnter;
 							gridNodes[i].Children.Add(cell);
 						}
 					}
@@ -393,6 +456,7 @@ namespace SOM_Kohonen_WpfApp.Views
 							Grid.SetColumn(cell, x);
 							Grid.SetRow(cell, y);
 							cell.MouseDown += NodeGrid_MouseDown;
+							cell.MouseEnter += NodeGrid_MouseEnter;
 							gridNodes[i].Children.Add(cell);
 						}
 					}
