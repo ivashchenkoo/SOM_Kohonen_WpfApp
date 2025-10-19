@@ -19,7 +19,8 @@ namespace SOM_Kohonen_WpfApp.Views
 	public partial class MainWindow : Window
 	{
 		private Map _map;
-		private readonly List<Grid> _selectedNodes = new List<Grid>();
+		// store selected borders instead of raw grids
+		private readonly List<Border> _selectedNodes = new List<Border>();
 
 		public MainWindow()
 		{
@@ -131,21 +132,21 @@ namespace SOM_Kohonen_WpfApp.Views
 
 		private void NodeGrid_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
 		{
-			var grid = sender as Grid;
-			if (_selectedNodes.Contains(grid))
+			// sender is a Border now
+			var border = sender as Border;
+			if (border == null) return;
+			if (_selectedNodes.Contains(border))
 			{
-				grid.Children.Clear();
-				_selectedNodes.Remove(grid);
+				DeselectNode(border);
+				_selectedNodes.Remove(border);
 			}
 			else
 			{
-				Grid maskGrid = new Grid
-				{
-					Background = new SolidColorBrush(Colors.Red)
-				};
-				grid.Children.Add(maskGrid);
-				_selectedNodes.Add(grid);
+				SelectNode(border);
+				_selectedNodes.Add(border);
 			}
+			// After toggling selection, adjust the outlines for neighboring selections
+			UpdateSelectionBorders();
 			UpdateStatistics();
 		}
 
@@ -368,11 +369,14 @@ namespace SOM_Kohonen_WpfApp.Views
 					{
 						for (int i = 0; i < map.Depth; i++)
 						{
-							Grid grid = CreateGrid(ColorFromHex("#e6e6e6"));
-							grid.Margin = new Thickness(0, 0, x + 1 != map.Width ? 1 : 0, y + 1 != map.Height ? 1 : 0);
-							Grid.SetColumn(grid, x);
-							Grid.SetRow(grid, y);
-							gridNodes[i].Children.Add(grid);
+							Grid inner = CreateGrid(ColorFromHex("#e6e6e6"));
+							Border cell = CreateCellBorder(inner);
+							cell.Margin = new Thickness(0, 0, x + 1 != map.Width ? 1 : 0, y + 1 != map.Height ? 1 : 0);
+							Grid.SetColumn(cell, x);
+							Grid.SetRow(cell, y);
+							// add click handler to border
+							cell.MouseDown += NodeGrid_MouseDown;
+							gridNodes[i].Children.Add(cell);
 						}
 					}
 					else
@@ -383,12 +387,13 @@ namespace SOM_Kohonen_WpfApp.Views
 							double val = mapNode.Weights[i].GetDoubleValue();
 							double ratio = maxVal == 0 ? 0 : val / maxVal; // 0..1
 							Color color = GetHeatMapColor(ratio);
-							Grid grid = CreateGrid(color);
-							grid.Margin = new Thickness(0, 0, x + 1 != map.Width ? 1 : 0, y + 1 != map.Height ? 1 : 0);
-							grid.MouseDown += NodeGrid_MouseDown;
-							Grid.SetColumn(grid, x);
-							Grid.SetRow(grid, y);
-							gridNodes[i].Children.Add(grid);
+							Grid inner = CreateGrid(color);
+							Border cell = CreateCellBorder(inner);
+							cell.Margin = new Thickness(0, 0, x + 1 != map.Width ? 1 : 0, y + 1 != map.Height ? 1 : 0);
+							Grid.SetColumn(cell, x);
+							Grid.SetRow(cell, y);
+							cell.MouseDown += NodeGrid_MouseDown;
+							gridNodes[i].Children.Add(cell);
 						}
 					}
 				}
@@ -411,6 +416,21 @@ namespace SOM_Kohonen_WpfApp.Views
 				}
 			}
 			catch (Exception) { }
+		}
+
+		// helper to create a cell border wrapping a grid and store original background in Tag
+		private Border CreateCellBorder(Grid inner)
+		{
+			var originalBrush = inner.Background as SolidColorBrush;
+			var cell = new Border
+			{
+				Child = inner,
+				BorderBrush = Brushes.Transparent,
+				BorderThickness = new Thickness(0),
+				Padding = new Thickness(0),
+				Tag = originalBrush // store for restore
+			};
+			return cell;
 		}
 
 		private Grid CreateGrid(Color color, int width = 10, int height = 10)
@@ -542,6 +562,72 @@ namespace SOM_Kohonen_WpfApp.Views
 		}
 
 		#endregion
+
+		// brighten the cell background (blend toward white) when selected
+		private void SelectNode(Border cell)
+		{
+			if (cell == null) return;
+			var inner = cell.Child as Grid;
+			if (inner == null) return;
+			var original = cell.Tag as SolidColorBrush;
+			if (original == null) return;
+			var bright = new SolidColorBrush(BlendColors(original.Color, Colors.White, 0.25));
+			inner.Background = bright;
+			cell.BorderBrush = new SolidColorBrush(Colors.Black);
+		}
+
+		private void DeselectNode(Border cell)
+		{
+			if (cell == null) return;
+			var inner = cell.Child as Grid;
+			if (inner == null) return;
+			var original = cell.Tag as SolidColorBrush;
+			if (original != null)
+			{
+				inner.Background = original;
+			}
+			cell.BorderBrush = Brushes.Transparent;
+			cell.BorderThickness = new Thickness(0);
+		}
+
+		// Recompute border thickness for all selected nodes so internal borders are hidden
+		private void UpdateSelectionBorders()
+		{
+			int highlightThickness = 2;
+			var set = new HashSet<(int x, int y)>();
+			foreach (var b in _selectedNodes)
+			{
+				set.Add((Grid.GetColumn(b), Grid.GetRow(b)));
+			}
+
+			foreach (var b in _selectedNodes)
+			{
+				int x = Grid.GetColumn(b);
+				int y = Grid.GetRow(b);
+				bool left = set.Contains((x - 1, y));
+				bool right = set.Contains((x + 1, y));
+				bool top = set.Contains((x, y - 1));
+				bool bottom = set.Contains((x, y + 1));
+
+				double leftT = left ? 0 : highlightThickness;
+				double topT = top ? 0 : highlightThickness;
+				double rightT = right ? 0 : highlightThickness;
+				double bottomT = bottom ? 0 : highlightThickness;
+				b.BorderThickness = new Thickness(leftT, topT, rightT, bottomT);
+				b.BorderBrush = new SolidColorBrush(Colors.Black);
+			}
+		}
+
+		// blend two colors by t (0..1)
+		private Color BlendColors(Color a, Color b, double t)
+		{
+			t = Math.Max(0, Math.Min(1, t));
+			byte r = (byte)Math.Round(a.R + (b.R - a.R) * t);
+			byte g = (byte)Math.Round(a.G + (b.G - a.G) * t);
+			byte bl = (byte)Math.Round(a.B + (b.B - a.B) * t);
+			byte aa = (byte)Math.Round(a.A + (b.A - a.A) * t);
+			return Color.FromArgb(aa, r, g, bl);
+		}
 
 		private async void STConverter_Click(object sender, RoutedEventArgs e)
 		{
