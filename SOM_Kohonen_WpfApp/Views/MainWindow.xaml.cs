@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
+using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -368,7 +368,7 @@ namespace SOM_Kohonen_WpfApp.Views
 					{
 						for (int i = 0; i < map.Depth; i++)
 						{
-							Grid grid = CreateGrid(ConvertColor(ColorTranslator.FromHtml("#e6e6e6")));
+							Grid grid = CreateGrid(ColorFromHex("#e6e6e6"));
 							grid.Margin = new Thickness(0, 0, x + 1 != map.Width ? 1 : 0, y + 1 != map.Height ? 1 : 0);
 							Grid.SetColumn(grid, x);
 							Grid.SetRow(grid, y);
@@ -379,7 +379,11 @@ namespace SOM_Kohonen_WpfApp.Views
 					{
 						for (int i = 0; i < mapNode.Weights.Count; i++)
 						{
-							Grid grid = CreateGrid(ConvertColor(GetColor((int)(mapNode.Weights[i].GetDoubleValue() / mapNode.Weights[i].MaxCollectionValue * 255))));
+							double maxVal = mapNode.Weights[i].MaxCollectionValue;
+							double val = mapNode.Weights[i].GetDoubleValue();
+							double ratio = maxVal == 0 ? 0 : val / maxVal; // 0..1
+							Color color = GetHeatMapColor(ratio);
+							Grid grid = CreateGrid(color);
 							grid.Margin = new Thickness(0, 0, x + 1 != map.Width ? 1 : 0, y + 1 != map.Height ? 1 : 0);
 							grid.MouseDown += NodeGrid_MouseDown;
 							Grid.SetColumn(grid, x);
@@ -421,57 +425,54 @@ namespace SOM_Kohonen_WpfApp.Views
 			};
 		}
 
-		private Color ConvertColor(System.Drawing.Color color)
+		// Parses #RRGGBB or #AARRGGBB
+		private Color ColorFromHex(string hex)
 		{
-			return Color.FromArgb(color.A, color.R, color.G, color.B);
+			if (string.IsNullOrWhiteSpace(hex)) return Colors.Transparent;
+			hex = hex.Trim();
+			if (hex.StartsWith("#")) hex = hex.Substring(1);
+			byte a = 255;
+			int start = 0;
+			if (hex.Length == 8)
+			{
+				a = byte.Parse(hex.Substring(0, 2), NumberStyles.HexNumber);
+				start = 2;
+			}
+			if (hex.Length - start != 6) return Colors.Transparent;
+			byte r = byte.Parse(hex.Substring(start, 2), NumberStyles.HexNumber);
+			byte g = byte.Parse(hex.Substring(start + 2, 2), NumberStyles.HexNumber);
+			byte b = byte.Parse(hex.Substring(start + 4, 2), NumberStyles.HexNumber);
+			return Color.FromArgb(a, r, g, b);
 		}
 
-		private System.Drawing.Color GetColor(int value)
+		/// <summary>
+		/// Returns a color on a heatmap from blue (0) to red (1) using HSV interpolation.
+		/// </summary>
+		private Color GetHeatMapColor(double value)
 		{
-			if (value < 3)
-			{
-				return ColorTranslator.FromHtml("#3a34eb");
-			}
-			else if (value >= 3 && value < 10)
-			{
-				return ColorTranslator.FromHtml("#4c47e6");
-			}
-			else if (value >= 10 && value < 20)
-			{
-				return ColorTranslator.FromHtml("#346ceb");
-			}
-			else if (value >= 20 && value < 40)
-			{
-				return ColorTranslator.FromHtml("#5881e0");
-			}
-			else if (value >= 40 && value < 85)
-			{
-				return ColorTranslator.FromHtml("#62d1ca");
-			}
-			else if (value >= 85 && value < 125)
-			{
-				return ColorTranslator.FromHtml("#95e882");
-			}
-			else if (value >= 125 && value < 150)
-			{
-				return ColorTranslator.FromHtml("#d4e882");
-			}
-			else if (value >= 150 && value < 175)
-			{
-				return ColorTranslator.FromHtml("#e1e36d");
-			}
-			else if (value >= 175 && value < 200)
-			{
-				return ColorTranslator.FromHtml("#e3c76d");
-			}
-			else if (value >= 200 && value < 225)
-			{
-				return ColorTranslator.FromHtml("#f2a268");
-			}
-			else
-			{
-				return ColorTranslator.FromHtml("#ed544e");
-			}
+			value = Math.Max(0.0, Math.Min(1.0, value));
+			double hue = 240.0 * (1.0 - value); // 240 (blue) -> 0 (red)
+			return FromHSV(hue, 1.0, 1.0);
+		}
+
+		// HSV to RGB conversion (h in degrees 0..360, s/v 0..1)
+		private Color FromHSV(double h, double s, double v)
+		{
+			double c = v * s;
+			double hh = h / 60.0;
+			double x = c * (1 - Math.Abs(hh % 2 - 1));
+			double r1 = 0, g1 = 0, b1 = 0;
+			if (hh >= 0 && hh < 1) { r1 = c; g1 = x; b1 = 0; }
+			else if (hh >= 1 && hh < 2) { r1 = x; g1 = c; b1 = 0; }
+			else if (hh >= 2 && hh < 3) { r1 = 0; g1 = c; b1 = x; }
+			else if (hh >= 3 && hh < 4) { r1 = 0; g1 = x; b1 = c; }
+			else if (hh >= 4 && hh < 5) { r1 = x; g1 = 0; b1 = c; }
+			else { r1 = c; g1 = 0; b1 = x; }
+			double m = v - c;
+			byte r = (byte)Math.Round((r1 + m) * 255);
+			byte g = (byte)Math.Round((g1 + m) * 255);
+			byte b = (byte)Math.Round((b1 + m) * 255);
+			return Color.FromArgb(255, r, g, b);
 		}
 
 		private bool MapIsEmpty()
