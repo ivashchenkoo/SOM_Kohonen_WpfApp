@@ -731,7 +731,12 @@ namespace SOM_Kohonen_WpfApp.Views
 				// Remove any previous selection border
 				var oldHex = inner.Children.OfType<Polygon>().FirstOrDefault(p => (string)p.Tag == "HexSelectionBorder");
 				if (oldHex != null) inner.Children.Remove(oldHex);
-				// The actual border will be drawn in UpdateSelectionBorders
+				 // Set hexagon fill to semi-transparent red
+				var hexagon = inner.Children.OfType<Polygon>().FirstOrDefault(p => p.Stroke == Brushes.Gray);
+				if (hexagon != null)
+				{
+					hexagon.Fill = new SolidColorBrush(BlendColors(original.Color, Colors.White, 0.25));
+				}
 				cell.BorderBrush = Brushes.Transparent;
 			}
 			else
