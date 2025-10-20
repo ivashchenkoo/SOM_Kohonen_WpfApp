@@ -140,23 +140,14 @@ namespace SOM_Kohonen_WpfApp.Views
 
 		private void NodeGrid_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
 		{
-			// sender is a Border now
 			var border = sender as Border;
 			if (border == null) return;
 			_isMouseDown = true;
-			if (_selectedNodes.Contains(border))
-			{
-				_dragSelectMode = false;
-				DeselectNode(border);
-				_selectedNodes.Remove(border);
-			}
-			else
-			{
-				_dragSelectMode = true;
-				SelectNode(border);
-				_selectedNodes.Add(border);
-			}
-			// After toggling selection, adjust the outlines for neighboring selections
+			int x = Grid.GetColumn(border);
+			int y = Grid.GetRow(border);
+			bool isSelected = _selectedNodes.Contains(border);
+			_dragSelectMode = !isSelected;
+			SynchronizeSelection(x, y, _dragSelectMode);
 			UpdateSelectionBorders();
 			UpdateStatistics();
 		}
@@ -166,26 +157,11 @@ namespace SOM_Kohonen_WpfApp.Views
 			if (!_isMouseDown) return;
 			var border = sender as Border;
 			if (border == null) return;
-			if (_dragSelectMode)
-			{
-				if (!_selectedNodes.Contains(border))
-				{
-					SelectNode(border);
-					_selectedNodes.Add(border);
-					UpdateSelectionBorders();
-					UpdateStatistics();
-				}
-			}
-			else
-			{
-				if (_selectedNodes.Contains(border))
-				{
-					DeselectNode(border);
-					_selectedNodes.Remove(border);
-					UpdateSelectionBorders();
-					UpdateStatistics();
-				}
-			}
+			int x = Grid.GetColumn(border);
+			int y = Grid.GetRow(border);
+			SynchronizeSelection(x, y, _dragSelectMode);
+			UpdateSelectionBorders();
+			UpdateStatistics();
 		}
 
 		private void MainWindow_MouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -232,6 +208,70 @@ namespace SOM_Kohonen_WpfApp.Views
 		#endregion
 
 		#region Methods
+
+		private void SynchronizeSelection(int x, int y, bool select)
+		{
+			// For each grid (feature/depth), find the cell at (x, y) and select/deselect it
+			foreach (var gridObj in MainGrid.Children)
+			{
+				if (gridObj is Border border && border.Child is StackPanel panel && panel.Children.Count > 1)
+				{
+					var grid = panel.Children[1];
+					if (grid is Grid gridSquare)
+					{
+						// Square grid
+						foreach (var cellObj in gridSquare.Children)
+						{
+							if (cellObj is Border cell && Grid.GetColumn(cell) == x && Grid.GetRow(cell) == y)
+							{
+								if (select)
+								{
+									if (!_selectedNodes.Contains(cell))
+									{
+										SelectNode(cell);
+										_selectedNodes.Add(cell);
+									}
+								}
+								else
+								{
+									if (_selectedNodes.Contains(cell))
+									{
+										DeselectNode(cell);
+										_selectedNodes.Remove(cell);
+									}
+								}
+							}
+						}
+					}
+					else if (grid is Canvas canvas)
+					{
+						// Hex grid
+						foreach (var cellObj in canvas.Children)
+						{
+							if (cellObj is Border cell && Grid.GetColumn(cell) == x && Grid.GetRow(cell) == y)
+							{
+								if (select)
+								{
+									if (!_selectedNodes.Contains(cell))
+									{
+										SelectNode(cell);
+										_selectedNodes.Add(cell);
+									}
+								}
+								else
+								{
+									if (_selectedNodes.Contains(cell))
+									{
+										DeselectNode(cell);
+										_selectedNodes.Remove(cell);
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 
 		private void UpdateStatistics()
 		{
