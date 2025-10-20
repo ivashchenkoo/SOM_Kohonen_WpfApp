@@ -147,8 +147,12 @@ namespace SOM_Kohonen_WpfApp.SOM
 			{
 				var values = new List<double>();
 				for (int x = 0; x < Width; x++)
+				{
 					for (int y = 0; y < Height; y++)
+					{
 						values.Add(Grid[x, y].Weights.First(w => w.Key == feature).GetDoubleValue());
+					}
+				}
 
 				double mean = values.Average();
 				double variance = values.Select(v => (v - mean) * (v - mean)).Average();

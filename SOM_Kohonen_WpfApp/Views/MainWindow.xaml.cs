@@ -729,27 +729,27 @@ namespace SOM_Kohonen_WpfApp.Views
 		}
 
 		/// <summary>
-		/// Identifies low influence features, based on lowest 20% variance across all nodes.
+		/// Identifies low influence features using an adaptive IQR-based threshold.
+		/// Features with variance < Q1 - 1.5 * IQR are considered low influence.
 		/// </summary>
-		/// <returns>List of feature names with low influence on the map.</returns>
 		private List<string> AnalyzeLowInfluenceFeatures()
 		{
 			if (_map == null) return new List<string>();
-
-			// 1. Calculate variance for each feature
 			var variances = _map.CalculateFeatureVariance();
 			if (variances.Count == 0) return new List<string>();
-
-			// Dynamically set threshold so that about 20% of features are marked as low influence
-			// Sort variances and use the 20% as the cutoff
-			var sortedVars = variances.OrderBy(kv => kv.Value).ToList();
-			int n = sortedVars.Count;
-			int cutoffIndex = (int)Math.Ceiling(n * 0.2) - 1; // 20%
-			if (cutoffIndex < 0) cutoffIndex = 0;
-			double threshold = sortedVars[cutoffIndex].Value;
-
-			// 2. Identify low-influence features based on the provided threshold
-			var lowImpact = variances.Where(kv => kv.Value <= threshold).Select(kv => kv.Key).ToList();
+			var values = variances.Values.OrderBy(v => v).ToList();
+			int n = values.Count;
+			double Q1 = n > 0 ? values[(int)(0.25 * (n - 1))] : 0.0;
+			double Q3 = n > 0 ? values[(int)(0.75 * (n - 1))] : 0.0;
+			double IQR = Q3 - Q1;
+			double threshold = Q1 - 1.5 * IQR;
+			// Only features with variance below threshold are considered low influence
+			var lowImpact = variances.Where(kv => kv.Value < threshold).Select(kv => kv.Key).ToList();
+			// If none found, fallback to Q1 (below 25th percentile)
+			if (lowImpact.Count == 0)
+			{
+				lowImpact = variances.Where(kv => kv.Value <= Q1).Select(kv => kv.Key).ToList();
+			}
 			return lowImpact;
 		}
 
@@ -771,7 +771,7 @@ namespace SOM_Kohonen_WpfApp.Views
 				// Remove any previous selection border
 				var oldHex = inner.Children.OfType<Polygon>().FirstOrDefault(p => (string)p.Tag == "HexSelectionBorder");
 				if (oldHex != null) inner.Children.Remove(oldHex);
-				 // Set hexagon fill to semi-transparent red
+				// Set hexagon fill to semi-transparent red
 				var hexagon = inner.Children.OfType<Polygon>().FirstOrDefault(p => p.Stroke == Brushes.Gray);
 				if (hexagon != null)
 				{
