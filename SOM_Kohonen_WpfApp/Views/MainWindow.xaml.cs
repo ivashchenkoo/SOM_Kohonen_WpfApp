@@ -570,14 +570,14 @@ namespace SOM_Kohonen_WpfApp.Views
 			double width = Math.Sqrt(3) / 2 * size;
 
 			hex.Points = new PointCollection
-{
-	new Point(width / 2, 0),                  // top point
-    new Point(width, size / 4),               // top-right
-    new Point(width, 3 * size / 4),           // bottom-right
-    new Point(width / 2, size),               // bottom
-    new Point(0, 3 * size / 4),               // bottom-left
-    new Point(0, size / 4)                    // top-left
-};
+			{
+				new Point(width / 2, 0), // top point
+				new Point(width, size / 4), // top-right
+				new Point(width, 3 * size / 4), // bottom-right
+				new Point(width / 2, size), // bottom
+				new Point(0, 3 * size / 4), // bottom-left
+				new Point(0, size / 4) // top-left
+			};
 
 			var grid = new Grid();
 			grid.Children.Add(hex);
@@ -755,7 +755,9 @@ namespace SOM_Kohonen_WpfApp.Views
 					.Where(e => (e is Polyline || e is Polygon) && (string)((dynamic)e).Tag == "HexSelectionBorder")
 					.ToList();
 				foreach (var el in toRemove)
+				{
 					inner.Children.Remove(el);
+				}
 				// Remove all children except the original hexagon Polygon
 				var hexagon = inner.Children.OfType<Polygon>().FirstOrDefault(p => p.Stroke == Brushes.Gray);
 				inner.Children.Clear();
@@ -792,13 +794,15 @@ namespace SOM_Kohonen_WpfApp.Views
 						.Where(e => (e is Polyline || e is Polygon) && (string)((dynamic)e).Tag == "HexSelectionBorder")
 						.ToList();
 					foreach (var el in toRemove)
+					{
 						inner.Children.Remove(el);
+					}
 				}
 				// Points for a flat-topped hexagon in strict clockwise order starting from top
 				// 0: top, 1: top-right, 2: bottom-right, 3: bottom, 4: bottom-left, 5: top-left
 				// Directions for even-q vertical layout, matching the points order
-				int[][] evenDirs = new int[][] { new[] { 0, -1 }, new[] { 1, -1 }, new[] { 1, 0 }, new[] { 0, 1 }, new[] { -1, 0 }, new[] { -1, -1 } };
-				int[][] oddDirs = new int[][] { new[] { 0, -1 }, new[] { 1, 0 }, new[] { 1, 1 }, new[] { 0, 1 }, new[] { -1, 1 }, new[] { -1, 0 } };
+				int[][] evenDirs = new int[][] { new[] { 0, -1 }, new[] { 1, 0 }, new[] { 0, 1 }, new[] { -1, 1 }, new[] { -1, 0 }, new[] { -1, -1 } };
+				int[][] oddDirs = new int[][] { new[] { 1, -1 }, new[] { 1, 0 }, new[] { 1, 1 }, new[] { 0, 1 }, new[] { -1, 0 }, new[] { 0, -1 } };
 				var set = new HashSet<(int x, int y)>();
 				foreach (var b in _selectedNodes)
 				{
