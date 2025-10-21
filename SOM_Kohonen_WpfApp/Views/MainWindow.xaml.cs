@@ -401,7 +401,7 @@ namespace SOM_Kohonen_WpfApp.Views
 			MapSeedLabel.Content = $"Map seed: {map.Seed}";
 
 			List<FrameworkElement> gridNodes = new List<FrameworkElement>();
-			double hexWidth = 15; // width of hexagon
+			double hexWidth = 10; // width of hexagon
 			double hexHeight = Math.Sqrt(3) / 2 * hexWidth; // height of hexagon
 			for (int i = 0; i < _map[0, 0].Weights.Count; i++)
 			{
@@ -948,7 +948,7 @@ namespace SOM_Kohonen_WpfApp.Views
 					int y = Grid.GetRow(b);
 					var inner = b.Child as Grid;
 					if (inner == null) continue;
-					double size = inner.Width > 0 ? inner.Width : 15;
+					double size = inner.Width > 0 ? inner.Width : 10;
 					double width = Math.Sqrt(3) / 2 * size;
 					// Points in strict clockwise order (flat-topped)
 					var points = new[]
