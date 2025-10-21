@@ -359,6 +359,8 @@ namespace SOM_Kohonen_WpfApp.Views
 				return;
 			}
 
+			AddDetectClusterButton();
+
 			MenuItem showMapSeedMenuItem = new MenuItem
 			{
 				IsCheckable = true,
@@ -751,6 +753,93 @@ namespace SOM_Kohonen_WpfApp.Views
 				lowImpact = variances.Where(kv => kv.Value <= Q1).Select(kv => kv.Key).ToList();
 			}
 			return lowImpact;
+		}
+
+		private void AddDetectClusterButton()
+		{
+			// Add cluster detection menu item
+			var clusterMenuItem = new MenuItem { Header = "Detect Clusters" };
+			clusterMenuItem.Click += ClusterDetection_Click;
+			ViewMenu.Items.Add(clusterMenuItem);
+			ViewMenu.Items.Add(new Separator());
+		}
+
+		private void ClusterDetection_Click(object sender, RoutedEventArgs e)
+		{
+			if (_map == null)
+			{
+				MessageBox.Show("No map loaded.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+				return;
+			}
+			// Prompt for number of clusters using WPF dialog
+			var dlg = new InputDialog("Enter number of clusters:", "Cluster Detection", "4") { Owner = this };
+			if (dlg.ShowDialog() != true) return;
+			if (!int.TryParse(dlg.InputText, out int numClusters) || numClusters < 2)
+			{
+				MessageBox.Show("Invalid number of clusters.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+				return;
+			}
+			// Run clustering
+			int[,] clusterMap = _map.ClusterNodes(numClusters);
+			// Assign cluster IDs to nodes
+			for (int x = 0; x < _map.Width; x++)
+				for (int y = 0; y < _map.Height; y++)
+					_map[x, y].ClusterId = clusterMap[x, y];
+			// Show cluster grid
+			ShowClusterGrid(clusterMap, numClusters);
+		}
+
+		private void ShowClusterGrid(int[,] clusterMap, int numClusters)
+		{
+			Window clusterWindow = new Window
+			{
+				Title = $"SOM Clusters (k={numClusters})",
+				Width = 21 * _map.Width + 20,
+				Height = 21 * _map.Height + 20
+			};
+			Grid grid = new Grid();
+			for (int x = 0; x < _map.Width; x++)
+				grid.ColumnDefinitions.Add(new ColumnDefinition());
+			for (int y = 0; y < _map.Height; y++)
+				grid.RowDefinitions.Add(new RowDefinition());
+			// Generate distinct colors
+			var colors = Enumerable.Range(0, numClusters).Select(i => GetDistinctColor(i, numClusters)).ToArray();
+			for (int x = 0; x < _map.Width; x++)
+			{
+				for (int y = 0; y < _map.Height; y++)
+				{
+					int clusterId = clusterMap[x, y];
+					Border cell = new Border
+					{
+						Background = new SolidColorBrush(colors[clusterId]),
+						BorderBrush = Brushes.Black,
+						BorderThickness = new Thickness(0.5),
+						Margin = new Thickness(1),
+						Width = 20,
+						Height = 20,
+						Child = new TextBlock
+						{
+							Text = $"{clusterId}",
+							HorizontalAlignment = HorizontalAlignment.Center,
+							VerticalAlignment = VerticalAlignment.Center,
+							Foreground = Brushes.Black,
+							FontWeight = FontWeights.Bold
+						}
+					};
+					Grid.SetColumn(cell, x);
+					Grid.SetRow(cell, y);
+					grid.Children.Add(cell);
+				}
+			}
+			clusterWindow.Content = grid;
+			clusterWindow.Show();
+		}
+
+		private Color GetDistinctColor(int index, int total)
+		{
+			// HSV color wheel
+			double hue = (360.0 * index) / total;
+			return FromHSV(hue, 0.6, 1.0);
 		}
 
 		#endregion

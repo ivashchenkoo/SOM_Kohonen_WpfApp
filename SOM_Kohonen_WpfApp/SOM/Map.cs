@@ -165,5 +165,32 @@ namespace SOM_Kohonen_WpfApp.SOM
 
 		// Mapping: parameter name -> (numeric value -> original text)
 		public Dictionary<string, Dictionary<double, string>> TextValueMappings { get; set; } = new Dictionary<string, Dictionary<double, string>>();
+
+		/// <summary>
+		/// Cluster all nodes using their weights and assign cluster IDs.
+		/// </summary>
+		/// <param name="numClusters">Number of clusters to find.</param>
+		/// <returns>2D array of cluster IDs matching the map grid.</returns>
+		public int[,] ClusterNodes(int numClusters)
+		{
+			// Flatten all node weights into feature vectors
+			var nodeList = new List<Node>();
+			for (int x = 0; x < Width; x++)
+				for (int y = 0; y < Height; y++)
+					nodeList.Add(Grid[x, y]);
+			// Each node's feature vector: concatenate all weights
+			double[][] features = nodeList
+			.Select(n => n.Weights.Select(w => w.GetDoubleValue()).ToArray())
+			.ToArray();
+			// Run k-means
+			int[] labels = Service.KMeansClustering.Cluster(features, numClusters);
+			// Assign cluster IDs to nodes (optional: add property to Node)
+			int[,] clusterMap = new int[Width, Height];
+			int idx = 0;
+			for (int x = 0; x < Width; x++)
+				for (int y = 0; y < Height; y++)
+					clusterMap[x, y] = labels[idx++];
+			return clusterMap;
+		}
 	}
 }

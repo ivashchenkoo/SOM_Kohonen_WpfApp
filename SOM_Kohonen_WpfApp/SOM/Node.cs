@@ -67,5 +67,10 @@ namespace SOM_Kohonen_WpfApp.SOM
 				Weights[i].Value = Weights[i].GetDoubleValue() + (learningRate * fallOfDistance * (input.GetDoubleValue(Weights[i].Key) - Weights[i].GetDoubleValue()));
 			}
 		}
+
+		/// <summary>
+		/// Cluster ID assigned after clustering (optional, for visualization).
+		/// </summary>
+		public int ClusterId { get; set; }
 	}
 }

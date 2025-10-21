@@ -26,7 +26,7 @@
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>true</MapFileExtensions>
     <PublisherName>Ivashchenko Oleksandr</PublisherName>
-    <ApplicationRevision>3</ApplicationRevision>
+    <ApplicationRevision>4</ApplicationRevision>
     <ApplicationVersion>1.1.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <CreateDesktopShortcut>true</CreateDesktopShortcut>
@@ -100,8 +100,10 @@
     </ApplicationDefinition>
     <Compile Include="Models\Settings\DataColumn.cs" />
     <Compile Include="Models\Settings\InputOption.cs" />
+    <Compile Include="Service\KMeansClustering.cs" />
     <Compile Include="Service\RandomGenerator.cs" />
     <Compile Include="SOM\NodeType.cs" />
+    <Compile Include="Views\InputDialog.cs" />
     <Compile Include="Views\ParameterToPastelBrushConverter.cs" />
     <Compile Include="Views\SOMWizardWindow.xaml.cs">
       <DependentUpon>SOMWizardWindow.xaml</DependentUpon>
