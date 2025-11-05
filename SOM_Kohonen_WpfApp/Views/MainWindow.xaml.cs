@@ -35,10 +35,26 @@ namespace SOM_Kohonen_WpfApp.Views
 
 			try
 			{
+				string fileToOpen = null;
+				// Try ClickOnce activation data first
 				string[] activationData = AppDomain.CurrentDomain?.SetupInformation?.ActivationArguments?.ActivationData;
 				if (activationData != null && activationData.Any())
 				{
-					OpenMapFromFile(activationData[0]);
+					fileToOpen = activationData[0];
+				}
+				else
+				{
+					// Fallback: check command-line args
+					string[] args = Environment.GetCommandLineArgs();
+					// args[0] is exe path, so check args[1]
+					if (args.Length > 1 && System.IO.File.Exists(args[1]) && args[1].EndsWith(".som", StringComparison.OrdinalIgnoreCase))
+					{
+						fileToOpen = args[1];
+					}
+				}
+				if (!string.IsNullOrEmpty(fileToOpen))
+				{
+					OpenMapFromFile(fileToOpen);
 				}
 			}
 			catch (Exception) { }
