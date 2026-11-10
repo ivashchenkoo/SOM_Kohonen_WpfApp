@@ -56,10 +56,10 @@
     <ApplicationIcon>Resources\icon.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestCertificateThumbprint>21A6AEE0F0A57FCB3E84EFCEA5312B4EA0076597</ManifestCertificateThumbprint>
+    <ManifestCertificateThumbprint>28E7A15DE7B629C1413C0C84C48DAF357D9A92BD</ManifestCertificateThumbprint>
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestKeyFile>SOM_Kohonen_WpfApp_2_TemporaryKey.pfx</ManifestKeyFile>
+    <ManifestKeyFile>SOM_Kohonen_WpfApp_4_TemporaryKey.pfx</ManifestKeyFile>
   </PropertyGroup>
   <PropertyGroup>
     <GenerateManifests>true</GenerateManifests>
@@ -101,6 +101,18 @@
     <Compile Include="Models\Settings\DataColumn.cs" />
     <Compile Include="Models\Settings\InputOption.cs" />
     <Compile Include="Service\KMeansClustering.cs" />
+    <Compile Include="Service\SomTrainer.cs" />
+    <Compile Include="Service\ComparisonData.cs" />
+    <Compile Include="Service\ComparisonMetrics.cs" />
+    <Compile Include="Service\ComparisonExperiment.cs" />
+    <Compile Include="Service\ComparisonExport.cs" />
+    <Compile Include="Views\ComparisonWindow.xaml.cs">
+      <DependentUpon>ComparisonWindow.xaml</DependentUpon>
+    </Compile>
+    <Page Include="Views\ComparisonWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Compile Include="Service\RandomGenerator.cs" />
     <Compile Include="SOM\NodeType.cs" />
     <Compile Include="Views\InputDialog.cs" />
@@ -176,6 +188,7 @@
     <None Include="SOM_Kohonen_WpfApp_1_TemporaryKey.pfx" />
     <None Include="SOM_Kohonen_WpfApp_2_TemporaryKey.pfx" />
     <None Include="SOM_Kohonen_WpfApp_3_TemporaryKey.pfx" />
+    <None Include="SOM_Kohonen_WpfApp_4_TemporaryKey.pfx" />
     <None Include="SOM_Kohonen_WpfApp_TemporaryKey.pfx" />
   </ItemGroup>
   <ItemGroup>

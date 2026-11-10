@@ -64,6 +64,10 @@ namespace SOM_Kohonen_WpfApp.Views
 		}
 
 		#region Events
+        private void Comparison_Click(object sender, RoutedEventArgs e)
+        {
+            new ComparisonWindow { Owner = this }.Show();
+        }
 		private async void New_Click(object sender, RoutedEventArgs e)
 		{
 			SOMWizardWindow wizard = new SOMWizardWindow

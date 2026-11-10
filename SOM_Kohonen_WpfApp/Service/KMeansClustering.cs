@@ -1,29 +1,35 @@
 using System;
 using System.Linq;
+using System.Threading;
 
 namespace SOM_Kohonen_WpfApp.Service
 {
 	public static class KMeansClustering
 	{
-		public static int[] Cluster(double[][] data, int k, int maxIterations = 100)
+		public static int[] Cluster(double[][] data, int k, int maxIterations = 100, int? seed = null,
+            CancellationToken cancellation = default(CancellationToken))
 		{
+			if (data == null || data.Length == 0 || k < 1 || maxIterations < 1)
+				throw new ArgumentException("Invalid k-means configuration.");
 			int n = data.Length;
 			int dim = data[0].Length;
-			Random rand = new Random();
+			Random rand = seed.HasValue ? new Random(seed.Value) : new Random();
 			double[][] centroids = new double[k][];
 			for (int i = 0; i < k; i++)
 			{
 				centroids[i] = (double[])data[rand.Next(n)].Clone();
 			}
-			int[] labels = new int[n];
+			int[] labels = Enumerable.Repeat(-1, n).ToArray();
 			bool changed = true;
 			int iter = 0;
 			while (changed && iter < maxIterations)
 			{
+				cancellation.ThrowIfCancellationRequested();
 				changed = false;
 				// Assign clusters
 				for (int i = 0; i < n; i++)
 				{
+					cancellation.ThrowIfCancellationRequested();
 					int best = 0;
 					double bestDist = Distance(data[i], centroids[0]);
 					for (int j = 1; j < k; j++)

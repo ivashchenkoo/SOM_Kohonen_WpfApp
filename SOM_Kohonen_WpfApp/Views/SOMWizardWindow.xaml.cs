@@ -1,6 +1,5 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
 using System.IO;
@@ -11,7 +10,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using Microsoft.Win32;
-using Newtonsoft.Json.Linq;
 using SOM_Kohonen_WpfApp.Models;
 using SOM_Kohonen_WpfApp.Models.Settings;
 using SOM_Kohonen_WpfApp.SOM;
@@ -27,7 +25,6 @@ namespace SOM_Kohonen_WpfApp.Views
 		private List<Dictionary<string, object>> jsonData;
 		private List<DataColumn> dataColumns;
 		private Map _map;
-		private readonly BackgroundWorker timerBW = new BackgroundWorker();
 
 		// Mapping for text column encoding (text value to int)
 		private Dictionary<string, Dictionary<string, int>> textColumnEncodingMap = new Dictionary<string, Dictionary<string, int>>();
@@ -40,91 +37,38 @@ namespace SOM_Kohonen_WpfApp.Views
 			ImportSettingsGrid.Visibility = Visibility.Visible;
 			NNTrainGrid.Visibility = Visibility.Collapsed;
 			ResultButton.IsEnabled = false;
-
-			timerBW.DoWork += TimerWorker_DoWork;
-			timerBW.WorkerSupportsCancellation = true;
 		}
 
-		private void TimerWorker_DoWork(object sender, DoWorkEventArgs e)
-		{
-			Stopwatch stopwatch = new Stopwatch();
-			stopwatch.Start();
-
-			while (!timerBW.CancellationPending)
-			{
-				Dispatcher.Invoke(() => TimeLabel.Content = $"{stopwatch.Elapsed.Hours}:{stopwatch.Elapsed.Minutes}:{stopwatch.Elapsed.Seconds}:{stopwatch.Elapsed.Milliseconds}");
-			}
-			stopwatch.Stop();
-		}
-
-		private async void Train(Map map, IList<DataCollection> models, double learningRateStart = 0.05, int iterations = 100)
-		{
-			timerBW.RunWorkerAsync();
-			await Task.Run(() =>
-			{
-				Dispatcher.Invoke(() => TrainButton.IsEnabled = false);
-				Stopwatch stopwatch = new Stopwatch();
-				stopwatch.Start();
-				double latticeRadius = Math.Max(map.Width, map.Height) / 2;
-				double timeConstant = iterations / Math.Log(latticeRadius);
-				double learningRate = learningRateStart;
-				int iteration = 0;
-
-				while (iteration < iterations)
-				{
-					stopwatch.Restart();
-					Dispatcher.Invoke(() => IterationLabel.Content = iteration + 1);
-
-					double neighborhoodRadius = latticeRadius * Math.Exp(-iteration / timeConstant);
-					double neighborhoodDiameter = neighborhoodRadius * 2;
-					double neighborhoodRadiusSquared = neighborhoodRadius * neighborhoodRadius;
-
-					// Finds the node that best matches the given training data and adjusts the nodes near it based on the given radius and training rate.
-					foreach (DataCollection model in models)
-					{
-						Node bestMatchingNode = map.GetBestMatchingNode(model);
-
-						// Calculate the neighborhood boundaries of map nodes near the best matching node to adjust.
-						int startX = (int)Math.Max(0, bestMatchingNode.X - neighborhoodRadius - 1);
-						int startY = (int)Math.Max(0, bestMatchingNode.Y - neighborhoodRadius - 1);
-						int endX = (int)Math.Min(map.Width, startX + neighborhoodDiameter + 1);
-						int endY = (int)Math.Min(map.Height, startY + neighborhoodDiameter + 1);
-
-						for (int x = startX; x < endX; x++)
-						{
-							for (int y = startY; y < endY; y++)
-							{
-								Node nodeToAdjust = map[x, y];
-								double distanceSquared = bestMatchingNode.DistanceToSquared(nodeToAdjust, map.NodeType);
-
-								// Perform a filter to get only the nodes in the neighborhood
-								if (distanceSquared <= neighborhoodRadiusSquared)
-								{
-									double distanceFalloff = Math.Exp(-distanceSquared / (2 * neighborhoodRadiusSquared));
-									nodeToAdjust.AdjustWeights(model, learningRate, distanceFalloff);
-								}
-							}
-						}
-					}
-
-					iteration++;
-					learningRate = learningRateStart * Math.Exp(-(double)iteration / iterations);
-
-					Dispatcher.Invoke(() =>
-					{
-						LogListView.Items.Add($"Iteration: {iteration}\tLearningRate: {Math.Round(learningRate, 6)}\tTime: {stopwatch.Elapsed.Minutes}:{stopwatch.Elapsed.Seconds}:{stopwatch.Elapsed.Milliseconds}");
-						LogScrollViewer.ScrollToBottom();
-					});
-				}
-			});
-			Dispatcher.Invoke(() =>
-			{
-				TrainButton.IsEnabled = true;
-				ResultButton.IsEnabled = true;
-			});
-			timerBW.CancelAsync();
-		}
-
+        private async void Train(Map map, IList<DataCollection> models, double learningRateStart = 0.05, int iterations = 100)
+        {
+            TrainButton.IsEnabled = false;
+            ResultButton.IsEnabled = false;
+            var watch = Stopwatch.StartNew();
+            var progress = new Progress<int>(iteration =>
+            {
+                IterationLabel.Content = iteration;
+                TimeLabel.Content = watch.Elapsed.ToString();
+                LogListView.Items.Add($"Iteration: {iteration}");
+                LogScrollViewer.ScrollToBottom();
+            });
+            try
+            {
+                await Task.Run(() => SOM_Kohonen_WpfApp.Service.SomTrainer.Train(map, models,
+                    Enumerable.Range(0, models.Count).ToArray(), iterations, learningRateStart,
+                    Math.Max(1, Math.Max(map.Width, map.Height) / 2), System.Threading.CancellationToken.None,
+                    iteration => ((IProgress<int>)progress).Report(iteration)));
+                ResultButton.IsEnabled = true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, ex.Message, "SOM training", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                watch.Stop();
+                TrainButton.IsEnabled = true;
+            }
+        }
 		private void ImportSettingsNext_Click(object sender, RoutedEventArgs e)
 		{
 			if (jsonData == null || !jsonData.Any() || dataColumns == null)
@@ -215,14 +159,7 @@ namespace SOM_Kohonen_WpfApp.Views
 
 		private static List<Dictionary<string, object>> GetJsonData(string path)
 		{
-			string json = File.ReadAllText(path);
-			JArray parsedArray = JArray.Parse(json);
-			List<Dictionary<string, object>> models = new List<Dictionary<string, object>>();
-			foreach (JObject parsedObject in parsedArray.Children<JObject>())
-			{
-				models.Add(parsedObject.ToObject<Dictionary<string, object>>());
-			}
-			return models;
+            return SOM_Kohonen_WpfApp.Service.JsonIOService.ReadObjectFromJson<List<Dictionary<string, object>>>(path);
 		}
 
 		private void Preview_TextInputInteger(object sender, TextCompositionEventArgs e)
