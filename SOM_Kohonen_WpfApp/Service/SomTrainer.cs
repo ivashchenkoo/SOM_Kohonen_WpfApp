@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using SOM_Kohonen_WpfApp.Models;
 using SOM_Kohonen_WpfApp.SOM;
@@ -8,6 +9,8 @@ namespace SOM_Kohonen_WpfApp.Service
 {
     public static class SomTrainer
     {
+        public static int[] SourceOrder(int rowCount) => Enumerable.Range(0, rowCount).ToArray();
+
         // One iteration is a complete pass over the supplied, immutable row order.
         public static void Train(Map map, IList<DataCollection> rows, int[] order, int iterations,
             double rate, double radius, CancellationToken cancellation, Action<int> progress = null)

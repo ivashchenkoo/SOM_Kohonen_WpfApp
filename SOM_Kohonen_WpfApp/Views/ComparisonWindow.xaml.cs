@@ -107,6 +107,7 @@ namespace SOM_Kohonen_WpfApp.Views
             {
                 Dataset = dataset, IdColumn = SelectedId, Features = features.Where(f => f.Selected && f.Name != SelectedId).Select(f => f.Name).ToList(),
                 Normalization = (NormalizationMode)Normalization.SelectedIndex,
+                RowOrder = (TrainingRowOrder)RowOrder.SelectedIndex,
                 Width = Integer(MapWidth, "Ширина"), Height = Integer(MapHeight, "Висота"), Iterations = Integer(Iterations, "Ітерації"),
                 LearningRate = Real(LearningRate, "Швидкість навчання"), Radius = Real(Radius, "Радіус"), Seeds = GetSeeds(),
                 SeedMode = SeedMode.SelectedIndex == 0 ? "Automatic" : "Manual", BaseSeed = SeedMode.SelectedIndex == 0 ? Integer(BaseSeed, "Базовий seed") : 0,
@@ -134,14 +135,25 @@ namespace SOM_Kohonen_WpfApp.Views
                 RefreshResults();
                 ProgressText.Text = (result.Cancelled ? "Скасовано. " : result.Error != null ? "Помилка: " + result.Error + ". " : "Серію завершено. ")
                     + $"{result.CompletedTrainings} із {config.Seeds.Length * 2} навчань; {result.Runs.Count} запусків із показниками. Завершені результати доступні для експорту.";
-                Tabs.SelectedIndex = 1;
+                Tabs.SelectedItem = MapsTab;
             }
             catch (OperationCanceledException) { ProgressText.Text = "Скасовано підготовку даних."; }
             catch (Exception ex) { ShowError(ex); }
             finally { cancellation?.Dispose(); cancellation = null; SetBusy(false); }
         }
+        private void RowOrder_Changed(object sender, SelectionChangedEventArgs e)
+        {
+            if (ready) UpdateOrderNotice();
+        }
+        private void UpdateOrderNotice()
+        {
+            PendingRowOrder.Visibility = result != null && result.Config.RowOrder != (TrainingRowOrder)RowOrder.SelectedIndex
+                ? Visibility.Visible : Visibility.Collapsed;
+        }
         private void RefreshResults()
         {
+            UpdateOrderNotice();
+            MapsView.Display(result);
             SeedResults.ItemsSource = ComparisonTables.BySeed(result).DefaultView;
             SummaryResults.ItemsSource = ComparisonTables.Summary(result).DefaultView;
             AriResults.ItemsSource = ComparisonTables.Aris(result).DefaultView;
@@ -161,6 +173,87 @@ namespace SOM_Kohonen_WpfApp.Views
             busy = value; SettingsPanel.IsEnabled = !value; StartButton.IsEnabled = !value;
             if (!value) CancelButton.IsEnabled = false;
             ExportButton.IsEnabled = AssignmentsButton.IsEnabled = !value && result != null;
+            SaveResultButton.IsEnabled = !value && result != null;
+            OpenResultButton.IsEnabled = MapsView.IsEnabled = !value;
+        }
+
+        private async void SaveResult_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new SaveFileDialog { Filter = ComparisonResultFile.Filter, DefaultExt = ".somcmp",
+                FileName = "SOM-" + result.StartedUtc.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture) };
+            if (dialog.ShowDialog(this) != true) return;
+            SetBusy(true);
+            try
+            {
+                await Task.Run(() => ComparisonResultFile.Save(dialog.FileName, result));
+                ProgressText.Text = "Результат збережено у " + dialog.FileName;
+            }
+            catch (Exception ex) { ShowError(ex); }
+            finally { SetBusy(false); }
+        }
+
+        private async void OpenResult_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new OpenFileDialog { Filter = ComparisonResultFile.Filter };
+            if (dialog.ShowDialog(this) != true) return;
+            SetBusy(true);
+            try
+            {
+                var loaded = await Task.Run(() => ComparisonResultFile.Open(dialog.FileName));
+                RestoreSettings(loaded);
+                result = loaded;
+                RefreshResults();
+                TotalProgress.Maximum = 2L * result.Config.Seeds.Length;
+                TotalProgress.Value = result.CompletedTrainings;
+                IterationText.Text = "";
+                IterationProgress.Value = 0;
+                string status = result.Error ?? (result.Cancelled ? "Скасована серія" : "Завершена серія");
+                ProgressText.Text = $"{Path.GetFileName(dialog.FileName)} · {status} · готових карт {result.Runs.Count} із {TotalProgress.Maximum}";
+                Tabs.SelectedItem = MapsTab;
+            }
+            catch (Exception ex) { ShowError(ex); }
+            finally { SetBusy(false); }
+        }
+
+        private void RestoreSettings(ComparisonResult loaded)
+        {
+            var config = loaded.Config;
+            var restoredRows = new List<Dictionary<string, object>>(loaded.Data.Ids.Length);
+            for (int i = 0; i < loaded.Data.Ids.Length; i++)
+            {
+                var row = new Dictionary<string, object>();
+                for (int j = 0; j < config.Features.Count; j++)
+                    row.Add(config.Features[j], loaded.Data.Original[i][j]);
+                if (config.IdColumn != null) row.Add(config.IdColumn, loaded.Data.Ids[i]);
+                restoredRows.Add(row);
+            }
+            rows = restoredRows;
+            dataset = config.Dataset;
+            features = config.Features.Select(name => new ComparisonFeature { Name = name, Selected = true }).ToList();
+            IdColumn.ItemsSource = new[] { "(ID вихідного рядка)" }.Concat(rows[0].Keys).ToArray();
+            IdColumn.SelectedIndex = config.IdColumn == null ? 0 : 1 + rows[0].Keys.ToList().IndexOf(config.IdColumn);
+            Id_Changed(null, null);
+            DatasetText.Text = Path.GetFileName(dataset) + " — " + rows.Count + " рядків із файлу результату";
+            Normalization.SelectedIndex = (int)config.Normalization;
+            RowOrder.SelectedIndex = (int)config.RowOrder;
+            MapWidth.Text = config.Width.ToString();
+            MapHeight.Text = config.Height.ToString();
+            Iterations.Text = config.Iterations.ToString();
+            LearningRate.Text = ComparisonTables.Number(config.LearningRate);
+            Radius.Text = ComparisonTables.Number(config.Radius);
+            ClusterCount.Text = config.K.ToString();
+            KMeansSeed.Text = config.KMeansSeed.ToString();
+            KMeansIterations.Text = config.KMeansIterations.ToString();
+            ready = false;
+            try
+            {
+                BaseSeed.Text = config.BaseSeed.ToString();
+                PairCount.Text = config.Seeds.Length.ToString();
+                CustomSeeds.Text = string.Join(", ", config.Seeds);
+                SeedMode.SelectedIndex = config.SeedMode == "Automatic" ? 0 : 1;
+            }
+            finally { ready = true; }
+            RefreshSeeds();
         }
         private void Window_Closing(object sender, CancelEventArgs e)
         {

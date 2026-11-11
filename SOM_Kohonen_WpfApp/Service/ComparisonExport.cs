@@ -14,6 +14,16 @@ namespace SOM_Kohonen_WpfApp.Service
     {
         public static string Number(double? value) => value.HasValue ? value.Value.ToString("R", CultureInfo.InvariantCulture) : "н/д";
         public static string Lattice(NodeType value) => value == NodeType.Square ? "Квадратна" : "Гексагональна";
+        public static string OrderName(TrainingRowOrder order) =>
+            order == TrainingRowOrder.Source ? "Порядок файлу (SOMWizard)" : "Перемішування за seed";
+        public static string MapHeading(ComparisonResult result, int seed, NodeType lattice)
+        {
+            double? seconds = result.TrainingSeconds(seed, lattice);
+            string duration = "н/д";
+            if (seconds.HasValue)
+                duration = seconds.Value < 1 ? $"{seconds.Value * 1000:0.###} мс" : $"{seconds.Value:0.###} с";
+            return $"{Lattice(lattice)} решітка · навчання SOM {duration}";
+        }
         private static DataTable Table(params string[] columns)
         {
             var table = new DataTable();
@@ -22,7 +32,8 @@ namespace SOM_Kohonen_WpfApp.Service
         }
         public static DataTable BySeed(ComparisonResult result)
         {
-            var table = Table("Seed", "Силует квадратної", "Силует гексагональної", "Різниця (гекс − кв)", "ARI", "Статус", "Пояснення");
+            var table = Table("Seed", "Силует квадратної", "Силует гексагональної", "Різниця (гекс − кв)", "ARI", "Статус", "Пояснення",
+                "Навчання квадратної, с", "Навчання гексагональної, с", "Порядок рядків", "SHA-256 порядку рядків");
             foreach (int seed in result.Config.Seeds)
             {
                 var square = result.Runs.FirstOrDefault(r => r.Seed == seed && r.Lattice == NodeType.Square);
@@ -31,7 +42,9 @@ namespace SOM_Kohonen_WpfApp.Service
                 table.Rows.Add(seed, Number(square?.Silhouette.Value), Number(hex?.Silhouette.Value),
                     Number(hex?.Silhouette.Value - square?.Silhouette.Value), Number(ari?.Value),
                     square != null && hex != null ? "Завершена" : square != null || hex != null ? "Неповна пара" : "Не завершена",
-                    string.Join("; ", new[] { square?.Silhouette.Reason, hex?.Silhouette.Reason }.Where(s => s != null).Distinct()));
+                    string.Join("; ", new[] { square?.Silhouette.Reason, hex?.Silhouette.Reason }.Where(s => s != null).Distinct()),
+                    Number(result.TrainingSeconds(seed, NodeType.Square)), Number(result.TrainingSeconds(seed, NodeType.Hexagonal)),
+                    OrderName(result.Config.RowOrder), (square ?? hex)?.OrderHash);
             }
             return table;
         }
@@ -85,9 +98,7 @@ namespace SOM_Kohonen_WpfApp.Service
             var square = result.Runs.FirstOrDefault(r => r.Seed == seed && r.Lattice == NodeType.Square);
             var hex = result.Runs.FirstOrDefault(r => r.Seed == seed && r.Lattice == NodeType.Hexagonal);
             if (square == null || hex == null) return table;
-            var right = hex.Assignments.ToDictionary(a => a.Id, a => a.Cluster, StringComparer.Ordinal);
-            var overlaps = new int[result.Config.K, result.Config.K];
-            foreach (var a in square.Assignments) overlaps[a.Cluster, right[a.Id]]++;
+            var overlaps = ComparisonMetrics.ClusterOverlaps(square, hex, result.Config.K);
             var matching = ComparisonMetrics.MatchClusters(overlaps);
             for (int i = 0; i < matching.Length; i++)
             {
@@ -144,10 +155,11 @@ namespace SOM_Kohonen_WpfApp.Service
             JsonIOService.WriteObjectToJson(Path.Combine(folder, "experiment.json"), new
             {
                 result.Config, result.StartedUtc, result.FinishedUtc, result.Cancelled, result.Error, result.CompletedTrainings,
+                result.TrainingTimes,
                 RowCount = result.Data.Ids.Length, DataSha256 = result.Data.Fingerprint,
                 result.Data.Offsets, result.Data.Scales,
                 IdPolicy = result.Config.IdColumn ?? "row:<1-based source row index>",
-                Runs = result.Runs.Select(r => new { r.Seed, r.Lattice, r.InitialWeightsHash, r.OrderHash }),
+                Runs = result.Runs.Select(r => new { r.Seed, r.Lattice, r.InitialWeightsHash, r.OrderHash, r.FirstSourceRows }),
                 Silhouette = "Exact Euclidean, all subscribers; singleton=0; undefined unless 2 <= occupied clusters <= N-1",
                 ProfileMeans = "Original unnormalized values; empty clusters have missing means",
                 Matching = "Hungarian maximum total subscriber intersection; zero-based cluster IDs and BMU coordinates"

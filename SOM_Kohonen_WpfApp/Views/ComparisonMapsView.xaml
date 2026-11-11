@@ -1,0 +1,143 @@
+<UserControl x:Class="SOM_Kohonen_WpfApp.Views.ComparisonMapsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="clr-namespace:SOM_Kohonen_WpfApp.Views">
+    <UserControl.Resources>
+        <DataTemplate x:Key="FeatureTile">
+            <Border Width="178" Background="White" BorderBrush="#DEE5EC" BorderThickness="1" CornerRadius="3" Margin="3" Padding="5">
+                <StackPanel>
+                    <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold" Foreground="#172B3C"
+                               HorizontalAlignment="Center" TextWrapping="Wrap"/>
+                    <views:FeaturePlane Height="{Binding MapHeight}" SelectionEdited="FeatureSelectionEdited"
+                        Lattice="{Binding DataContext.Lattice, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}"
+                        SelectionVersion="{Binding SelectionVersion, RelativeSource={RelativeSource AncestorType={x:Type views:ComparisonMapsView}}}"/>
+                    <Grid Margin="2">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                        <TextBlock Text="{Binding LowLabel}" FontSize="11" HorizontalAlignment="Right" TextWrapping="Wrap"/>
+                        <Border x:Name="ScaleBar" Grid.Column="1" Width="42" Height="6" Margin="4,0">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                    <GradientStop Color="Blue" Offset="0"/><GradientStop Color="Cyan" Offset=".25"/>
+                                    <GradientStop Color="Lime" Offset=".5"/><GradientStop Color="Yellow" Offset=".75"/>
+                                    <GradientStop Color="Red" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                        </Border>
+                        <TextBlock x:Name="High" Grid.Column="2" Text="{Binding HighLabel}" FontSize="11" TextWrapping="Wrap"/>
+                        <TextBlock x:Name="ConstantLabel" Grid.Column="2" Text="Стале значення" FontSize="11" TextWrapping="Wrap" Visibility="Collapsed"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding Constant}" Value="True">
+                    <Setter TargetName="ScaleBar" Property="Background" Value="Lime"/>
+                    <Setter TargetName="ScaleBar" Property="Width" Value="20"/>
+                    <Setter TargetName="High" Property="Visibility" Value="Collapsed"/>
+                    <Setter TargetName="ConstantLabel" Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+        <DataTemplate x:Key="LatticeBlock">
+            <StackPanel>
+                <TextBlock Text="{Binding Heading}" TextWrapping="Wrap" Margin="3,0,3,4" FontSize="15" Foreground="#34516A" FontWeight="SemiBold"/>
+                <ItemsControl x:Name="Tiles" ItemsSource="{Binding Features}" ItemTemplate="{StaticResource FeatureTile}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                </ItemsControl>
+                <TextBlock x:Name="MissingRun" Text="Запуск не завершено" Margin="3" Foreground="SlateGray" Visibility="Collapsed"/>
+            </StackPanel>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding Available}" Value="False">
+                    <Setter TargetName="Tiles" Property="Visibility" Value="Collapsed"/>
+                    <Setter TargetName="MissingRun" Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+        <DataTemplate x:Key="FeatureRow">
+            <Border Background="White" BorderBrush="#CFD8E2" BorderThickness="1" CornerRadius="4" Margin="3,3,3,6" Padding="10">
+                <StackPanel>
+                    <TextBlock Text="{Binding Seed, StringFormat='Seed {0}'}" Margin="3,0,3,7"
+                               Foreground="#172B3C" FontSize="17" FontWeight="SemiBold"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="14"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                        <ContentPresenter Content="{Binding Hex}" ContentTemplate="{StaticResource LatticeBlock}"/>
+                        <Border Grid.Column="1" Width="1" Background="#DEE5EC"/>
+                        <ContentPresenter Grid.Column="2" Content="{Binding Square}" ContentTemplate="{StaticResource LatticeBlock}"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+    </UserControl.Resources>
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/><RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <WrapPanel>
+            <RadioButton x:Name="ClusterMode" Content="Кластери" IsChecked="True" VerticalAlignment="Center" Margin="4"/>
+            <RadioButton x:Name="FeatureMode" Content="Карти ознак" VerticalAlignment="Center" Margin="4,0,16,0"
+                         Checked="MapModeChanged" Unchecked="MapModeChanged"/>
+            <TextBlock Text="Seed" VerticalAlignment="Center"/>
+            <ComboBox x:Name="SeedPicker" MinWidth="140" SelectionChanged="SeedChanged"/>
+            <Button x:Name="ClearButton" Content="Очистити виділення" Click="ClearSelection" IsEnabled="False"/>
+            <TextBlock x:Name="DatasetName" Margin="8,0" VerticalAlignment="Center"/>
+            <TextBlock x:Name="AppliedOrder" Margin="8,0" VerticalAlignment="Center"/>
+        </WrapPanel>
+        <WrapPanel Grid.Row="1" x:Name="FeatureControls" Visibility="Collapsed">
+            <Menu Background="Transparent" VerticalAlignment="Center"><MenuItem x:Name="FeatureMenu" Header="Показати ознаки ▾"/></Menu>
+            <CheckBox x:Name="AllSeeds" Content="Усі seed" VerticalAlignment="Center" Margin="12,0" Click="AllSeedsChanged"/>
+            <Button x:Name="SavePng" Content="Зберегти PNG…" Click="SaveFeaturePng"/>
+            <TextBlock Text="Ваги нейронів у вихідних одиницях" VerticalAlignment="Center" Margin="8,0" Foreground="#40546A"/>
+        </WrapPanel>
+        <TextBlock Grid.Row="1" x:Name="ClusterHint" TextWrapping="Wrap" Margin="4"
+            Text="Клацніть клітини або проведіть по них із затиснутою лівою кнопкою. Почніть з виділеної клітини, щоб зняти виділення. Число в клітині показує кількість абонентів."/>
+        <ScrollViewer Grid.Row="2" x:Name="ClusterLegend" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+            <StackPanel x:Name="Legend" Orientation="Horizontal" Margin="4"/>
+        </ScrollViewer>
+        <Grid Grid.Row="3" x:Name="ClusterMaps">
+            <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+            <GroupBox x:Name="SquareGroup" Grid.Column="1" Header="Квадратна решітка" Margin="2">
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                    <Canvas x:Name="SquareCanvas" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                </ScrollViewer>
+            </GroupBox>
+            <GroupBox x:Name="HexGroup" Header="Гексагональна решітка" Margin="2">
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                    <Canvas x:Name="HexCanvas" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                </ScrollViewer>
+            </GroupBox>
+        </Grid>
+        <Grid Grid.Row="3" x:Name="Gallery" Visibility="Collapsed">
+            <ListBox x:Name="FeatureRows" ItemTemplate="{StaticResource FeatureRow}" HorizontalContentAlignment="Stretch"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                     VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                     VirtualizingPanel.ScrollUnit="Pixel" Background="#F3F6F9" BorderThickness="0">
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="Focusable" Value="False"/>
+                        <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ListBoxItem">
+                            <ContentPresenter/>
+                        </ControlTemplate></Setter.Value></Setter>
+                    </Style>
+                </ListBox.ItemContainerStyle>
+            </ListBox>
+            <TextBlock x:Name="EmptyFeatures" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Grid>
+        <Expander Grid.Row="4" x:Name="StatisticsPanel" IsExpanded="True" Margin="2,4">
+          <Expander.Header><TextBlock x:Name="SelectionCount" FontWeight="SemiBold"
+                   Text="Запустіть серію або відкрийте збережений результат."/></Expander.Header>
+          <DataGrid MaxHeight="145" x:Name="MeansGrid" AutoGenerateColumns="False" IsReadOnly="True" FontSize="14">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Ознака" Binding="{Binding Feature}" Width="*"/>
+                <DataGridTextColumn Binding="{Binding NodeMean, StringFormat=G9, TargetNullValue=н/д}" Width="*">
+                    <DataGridTextColumn.Header><TextBlock Text="Середня вага нейронів" ToolTip="Ваги виділених нейронів у вихідних одиницях. Ці значення відповідають Average values у SOMWizard."/></DataGridTextColumn.Header>
+                </DataGridTextColumn>
+                <DataGridTextColumn Binding="{Binding SubscriberMean, StringFormat=G9, TargetNullValue=н/д}" Width="*">
+                    <DataGridTextColumn.Header><TextBlock Text="Середнє абонентів" ToolTip="Середнє вихідних записів абонентів у виділених нейронах. За однакового складу абонентів середнє збігається."/></DataGridTextColumn.Header>
+                </DataGridTextColumn>
+            </DataGrid.Columns>
+          </DataGrid>
+        </Expander>
+    </Grid>
+</UserControl>

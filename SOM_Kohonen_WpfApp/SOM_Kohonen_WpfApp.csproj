@@ -103,6 +103,16 @@
     <Compile Include="Service\KMeansClustering.cs" />
     <Compile Include="Service\SomTrainer.cs" />
     <Compile Include="Service\ComparisonData.cs" />
+    <Compile Include="Service\ComparisonResultFile.cs" />
+    <Compile Include="Service\MapSelection.cs" />
+    <Compile Include="Views\ComparisonMapsView.xaml.cs">
+      <DependentUpon>ComparisonMapsView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\FeaturePlane.cs" />
+    <Page Include="Views\ComparisonMapsView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Compile Include="Service\ComparisonMetrics.cs" />
     <Compile Include="Service\ComparisonExperiment.cs" />
     <Compile Include="Service\ComparisonExport.cs" />

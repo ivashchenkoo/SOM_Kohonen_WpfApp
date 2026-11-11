@@ -539,6 +539,7 @@ namespace SOM_Kohonen_WpfApp.Views
 								inner = CreateGrid(color, (int)hexWidth, (int)hexHeight);
 							}
 							Border cell = CreateCellBorderHex(inner, hexWidth);
+							cell.ToolTip = $"({x}, {y})";
 							cell.MouseDown += NodeGrid_MouseDown;
 							cell.MouseEnter += NodeGrid_MouseEnter;
 							// Store coordinates for selection/statistics
@@ -567,6 +568,7 @@ namespace SOM_Kohonen_WpfApp.Views
 							cell.Margin = new Thickness(0, 0, x + 1 != map.Width ? 1 : 0, y + 1 != map.Height ? 1 : 0);
 							Grid.SetColumn(cell, x);
 							Grid.SetRow(cell, y);
+							cell.ToolTip = $"({x}, {y})";
 							cell.MouseDown += NodeGrid_MouseDown;
 							cell.MouseEnter += NodeGrid_MouseEnter;
 							((Grid)gridNodes[i]).Children.Add(cell);
@@ -682,7 +684,7 @@ namespace SOM_Kohonen_WpfApp.Views
 		/// <summary>
 		/// Returns a color on a heatmap from blue (0) to red (1) using HSV interpolation.
 		/// </summary>
-		private Color GetHeatMapColor(double value)
+		internal static Color GetHeatMapColor(double value)
 		{
 			value = Math.Max(0.0, Math.Min(1.0, value));
 			double hue = 240.0 * (1.0 - value); // 240 (blue) -> 0 (red)
@@ -690,7 +692,7 @@ namespace SOM_Kohonen_WpfApp.Views
 		}
 
 		// HSV to RGB conversion (h in degrees 0..360, s/v 0..1)
-		private Color FromHSV(double h, double s, double v)
+		private static Color FromHSV(double h, double s, double v)
 		{
 			double c = v * s;
 			double hh = h / 60.0;
@@ -855,7 +857,7 @@ namespace SOM_Kohonen_WpfApp.Views
 			clusterWindow.Show();
 		}
 
-		private Color GetDistinctColor(int index, int total)
+		internal static Color GetDistinctColor(int index, int total)
 		{
 			// HSV color wheel
 			double hue = (360.0 * index) / total;

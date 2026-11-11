@@ -15,6 +15,13 @@ namespace SOM_Kohonen_WpfApp.Service
 
     public static class ComparisonMetrics
     {
+        public static int[,] ClusterOverlaps(ComparisonRun square, ComparisonRun hex, int k)
+        {
+            var right = hex.Assignments.ToDictionary(a => a.Id, a => a.Cluster, StringComparer.Ordinal);
+            var overlaps = new int[k, k];
+            foreach (var a in square.Assignments) overlaps[a.Cluster, right[a.Id]]++;
+            return overlaps;
+        }
         public static MetricValue Silhouette(IList<DataCollection> rows, int[] labels, CancellationToken token)
         {
             var groups = labels.Distinct().OrderBy(x => x).ToArray();

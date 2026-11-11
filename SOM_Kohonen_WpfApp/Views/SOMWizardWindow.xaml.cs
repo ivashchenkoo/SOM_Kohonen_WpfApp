@@ -54,7 +54,7 @@ namespace SOM_Kohonen_WpfApp.Views
             try
             {
                 await Task.Run(() => SOM_Kohonen_WpfApp.Service.SomTrainer.Train(map, models,
-                    Enumerable.Range(0, models.Count).ToArray(), iterations, learningRateStart,
+                    SOM_Kohonen_WpfApp.Service.SomTrainer.SourceOrder(models.Count), iterations, learningRateStart,
                     Math.Max(1, Math.Max(map.Width, map.Height) / 2), System.Threading.CancellationToken.None,
                     iteration => ((IProgress<int>)progress).Report(iteration)));
                 ResultButton.IsEnabled = true;

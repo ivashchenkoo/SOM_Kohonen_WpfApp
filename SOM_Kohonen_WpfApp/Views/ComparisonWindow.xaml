@@ -1,6 +1,7 @@
 <Window x:Class="SOM_Kohonen_WpfApp.Views.ComparisonWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:SOM_Kohonen_WpfApp.Views"
         Title="Порівняння решіток SOM" Width="1180" Height="820" MinWidth="900" MinHeight="650"
         Background="WhiteSmoke" WindowStartupLocation="CenterOwner" Closing="Window_Closing">
     <Window.Resources>
@@ -18,6 +19,8 @@
             <WrapPanel>
                 <Button x:Name="StartButton" Content="Запустити серію" Click="Start_Click"/>
                 <Button x:Name="CancelButton" Content="Скасувати" IsEnabled="False" Click="Cancel_Click"/>
+                <Button x:Name="OpenResultButton" Content="Відкрити результат…" Click="OpenResult_Click"/>
+                <Button x:Name="SaveResultButton" Content="Зберегти результат…" Click="SaveResult_Click" IsEnabled="False"/>
                 <Button x:Name="ExportButton" Content="Експорт у CSV" IsEnabled="False" Click="Export_Click"/>
                 <Button x:Name="AssignmentsButton" Content="Експорт призначень абонентів" IsEnabled="False" Click="Assignments_Click"/>
             </WrapPanel>
@@ -49,6 +52,15 @@
                                     <TextBlock Text="Швидкість навчання"/><TextBox x:Name="LearningRate" Text="0.03"/>
                                     <TextBlock Text="Початковий радіус"/><TextBox x:Name="Radius" Text="12"/>
                                 </WrapPanel>
+                                <WrapPanel>
+                                    <TextBlock Text="Порядок рядків"/>
+                                    <ComboBox x:Name="RowOrder" Width="260" SelectedIndex="0" SelectionChanged="RowOrder_Changed">
+                                        <ComboBoxItem Content="Як у SOMWizard (порядок файлу)"/>
+                                        <ComboBoxItem Content="Перемішати один раз за seed"/>
+                                    </ComboBox>
+                                </WrapPanel>
+                                <TextBlock x:Name="PendingRowOrder" Visibility="Collapsed" TextWrapping="Wrap" Margin="4"
+                                           Text="Для карт із новим порядком рядків натисніть «Запустити серію». На вкладках результатів показано попереднє навчання."/>
                                 <TextBlock Text="Ітерація = повний прохід вибірки. Метрика: евклідова. Сусідство: гаусове в межах радіуса. Швидкість і радіус спадають експоненційно. Карти без замикання країв." TextWrapping="Wrap" Margin="4"/>
                             </StackPanel>
                         </GroupBox>
@@ -83,6 +95,7 @@
                 </ScrollViewer>
             </TabItem>
             <TabItem Header="Результати за seed"><DataGrid x:Name="SeedResults" AutoGenerateColumns="True" IsReadOnly="True" FontSize="14"/></TabItem>
+            <TabItem x:Name="MapsTab" Header="Карти"><views:ComparisonMapsView x:Name="MapsView"/></TabItem>
             <TabItem Header="Зведення"><DataGrid x:Name="SummaryResults" AutoGenerateColumns="True" IsReadOnly="True" FontSize="14"/></TabItem>
             <TabItem Header="Попарні ARI"><DataGrid x:Name="AriResults" AutoGenerateColumns="True" IsReadOnly="True" FontSize="14"/></TabItem>
             <TabItem Header="Зіставлені профілі">

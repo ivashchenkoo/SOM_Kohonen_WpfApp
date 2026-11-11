@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Security.Cryptography;
 using System.IO;
@@ -28,9 +29,15 @@ namespace SOM_Kohonen_WpfApp.Service
         public NodeType Lattice { get; set; }
         public string InitialWeightsHash { get; set; }
         public string OrderHash { get; set; }
+        // One-based positions in the source file, taken from the order passed to the trainer.
+        public int[] FirstSourceRows { get; set; }
         public MetricValue Silhouette { get; set; }
         public List<SubscriberAssignment> Assignments { get; set; }
         public List<ClusterProfile> Profiles { get; set; }
+        // Node index = x * map height + y, the same order as the k-means input.
+        public int[] NodeClusters { get; set; }
+        public double[][] NodeWeights { get; set; }
+        public HashSet<int> SelectedNodes { get; } = new HashSet<int>();
     }
     public sealed class AriComparison
     {
@@ -49,6 +56,13 @@ namespace SOM_Kohonen_WpfApp.Service
         public string Stage { get; set; }
         public int Iteration { get; set; }
     }
+    public sealed class SomTrainingTime
+    {
+        public int Seed { get; set; }
+        public NodeType Lattice { get; set; }
+        public double Seconds { get; set; }
+    }
+
     public sealed class ComparisonResult
     {
         public ComparisonConfig Config { get; set; }
@@ -60,13 +74,20 @@ namespace SOM_Kohonen_WpfApp.Service
         public DateTime StartedUtc { get; set; } = DateTime.UtcNow;
         public DateTime FinishedUtc { get; set; }
         public int CompletedTrainings { get; set; }
+        public List<SomTrainingTime> TrainingTimes { get; } = new List<SomTrainingTime>();
+        public double? TrainingSeconds(int seed, NodeType lattice) =>
+            TrainingTimes.FirstOrDefault(t => t.Seed == seed && t.Lattice == lattice)?.Seconds;
+        public int? ViewedSeed { get; set; }
+        public HashSet<string> HiddenMapFeatures { get; } = new HashSet<string>(StringComparer.Ordinal);
+        public bool ShowAllFeatureSeeds { get; set; }
+        public bool ViewFeatureMaps { get; set; }
     }
 
     public static class ComparisonExperiment
     {
         public static int[] CreateOrder(int count, int seed)
         {
-            var order = Enumerable.Range(0, count).ToArray();
+            var order = SomTrainer.SourceOrder(count);
             var random = new Random(seed);
             for (int i = count - 1; i > 0; i--) { int j = random.Next(i + 1); int t = order[i]; order[i] = order[j]; order[j] = t; }
             return order;
@@ -109,7 +130,8 @@ namespace SOM_Kohonen_WpfApp.Service
                     initial.Initialize(data.Normalized, config.Features);
                     var square = CopyMap(initial, NodeType.Square);
                     var hex = CopyMap(initial, NodeType.Hexagonal);
-                    int[] squareOrder = CreateOrder(data.Ids.Length, seed);
+                    int[] squareOrder = config.RowOrder == TrainingRowOrder.Source
+                        ? SomTrainer.SourceOrder(data.Ids.Length) : CreateOrder(data.Ids.Length, seed);
                     int[] hexOrder = (int[])squareOrder.Clone();
                     string weightsHash = WeightsHash(square);
                     if (weightsHash != WeightsHash(hex) || !squareOrder.SequenceEqual(hexOrder) ||
@@ -122,13 +144,18 @@ namespace SOM_Kohonen_WpfApp.Service
                         Action<string, int> report = (stage, iteration) => progress?.Report(new ExperimentProgress
                         { Completed = result.CompletedTrainings, Total = config.Seeds.Length * 2, Seed = seed, Lattice = map.NodeType, Stage = stage, Iteration = iteration });
                         report("Навчання SOM", 0);
-                        SomTrainer.Train(map, data.Normalized, map.NodeType == NodeType.Square ? squareOrder : hexOrder,
+                        var timer = Stopwatch.StartNew();
+                        var order = map.NodeType == NodeType.Square ? squareOrder : hexOrder;
+                        SomTrainer.Train(map, data.Normalized, order,
                             config.Iterations, config.LearningRate, config.Radius, token, iteration => report("Навчання SOM", iteration));
+                        timer.Stop();
+                        result.TrainingTimes.Add(new SomTrainingTime { Seed = seed, Lattice = map.NodeType, Seconds = timer.Elapsed.TotalSeconds });
                         result.CompletedTrainings++;
                         report("k-means", config.Iterations);
                         var nodes = new List<Node>();
                         for (int x = 0; x < map.Width; x++) for (int y = 0; y < map.Height; y++) nodes.Add(map[x, y]);
-                        var labels = KMeansClustering.Cluster(nodes.Select(n => n.Weights.Select(w => w.GetDoubleValue()).ToArray()).ToArray(),
+                        var weights = nodes.Select(n => n.Weights.Select(w => w.GetDoubleValue()).ToArray()).ToArray();
+                        var labels = KMeansClustering.Cluster(weights,
                             config.K, config.KMeansIterations, config.KMeansSeed, token);
                         for (int i = 0; i < nodes.Count; i++) nodes[i].ClusterId = labels[i];
                         report("Розрахунок показників", config.Iterations);
@@ -140,7 +167,8 @@ namespace SOM_Kohonen_WpfApp.Service
                             assignments.Add(new SubscriberAssignment { Id = data.Ids[i], BmuX = bmu.X, BmuY = bmu.Y, Cluster = bmu.ClusterId });
                         }
                         var run = new ComparisonRun { Seed = seed, Lattice = map.NodeType, Assignments = assignments,
-                            InitialWeightsHash = weightsHash, OrderHash = orderHash,
+                            NodeClusters = labels, NodeWeights = weights,
+                            InitialWeightsHash = weightsHash, OrderHash = orderHash, FirstSourceRows = order.Take(5).Select(i => i + 1).ToArray(),
                             Silhouette = ComparisonMetrics.Silhouette(data.Normalized, assignments.Select(a => a.Cluster).ToArray(), token),
                             Profiles = new List<ClusterProfile>() };
                         for (int cluster = 0; cluster < config.K; cluster++)

@@ -10,6 +10,7 @@ using SOM_Kohonen_WpfApp.Models;
 namespace SOM_Kohonen_WpfApp.Service
 {
     public enum NormalizationMode { None, MinMax, ZScore }
+    public enum TrainingRowOrder { Source, SeededShuffle }
 
     public sealed class ComparisonConfig
     {
@@ -31,7 +32,12 @@ namespace SOM_Kohonen_WpfApp.Service
         public string Metric => "Euclidean";
         public string Neighborhood => "Gaussian, truncated at radius";
         public int KMeansInitializations => 1;
-        public string TrainingOrder => "Seeded Fisher-Yates once; same order in every full-pass iteration";
+        // Files saved before the row-order setting was introduced always used the shuffle.
+        [System.ComponentModel.DefaultValue(TrainingRowOrder.SeededShuffle)]
+        [Newtonsoft.Json.JsonProperty(DefaultValueHandling = Newtonsoft.Json.DefaultValueHandling.Populate)]
+        public TrainingRowOrder RowOrder { get; set; } = TrainingRowOrder.Source;
+        public string TrainingOrder => RowOrder == TrainingRowOrder.Source ? "Source row order (SOMWizard)"
+            : "Seeded Fisher-Yates once; same order in every full-pass iteration";
         public string Schedule => "rate(t)=rate*exp(-t/iterations); radius(t)=radius*exp(-t/iterations*log(radius))";
         public string Implementation => "SOM comparison v1 / .NET Framework 4.7.2";
 
@@ -50,6 +56,7 @@ namespace SOM_Kohonen_WpfApp.Service
             if (K < 1 || K > (long)Width * Height || KMeansIterations < 1)
                 throw new ArgumentException("k має бути від 1 до кількості нейронів; ітерації k-means — додатні.");
             if (!Enum.IsDefined(typeof(NormalizationMode), Normalization)) throw new ArgumentException("Невідома нормалізація.");
+            if (!Enum.IsDefined(typeof(TrainingRowOrder), RowOrder)) throw new ArgumentException("Невідомий порядок рядків.");
         }
 
         public static bool Finite(double value) => !double.IsNaN(value) && !double.IsInfinity(value);
@@ -79,6 +86,7 @@ namespace SOM_Kohonen_WpfApp.Service
     {
         public string[] Ids { get; set; }
         public double[][] Original { get; set; }
+        [Newtonsoft.Json.JsonIgnore]
         public List<DataCollection> Normalized { get; set; }
         public double[] Offsets { get; set; }
         public double[] Scales { get; set; }
@@ -135,14 +143,19 @@ namespace SOM_Kohonen_WpfApp.Service
                 result.Offsets[j] = offset;
                 result.Scales[j] = scale == 0 ? 1 : scale;
             }
-            result.Normalized = result.Original.Select(row => new DataCollection(config.Features.Select((f, j) =>
-                new { f, value = (row[j] - result.Offsets[j]) / result.Scales[j] }).ToDictionary(x => x.f, x => (object)x.value))).ToList();
+            result.RestoreNormalized(config);
             if (result.Normalized.Any(r => r.Any(v => !ComparisonConfig.Finite(v.GetDoubleValue()) || Math.Abs(v.GetDoubleValue()) > 1e150 / config.Features.Count)))
                 throw new ArgumentException("Завеликі нормалізовані значення; змініть нормалізацію.");
             // Canonical JSON includes source row order, IDs, feature order and original values.
             string canonical = Newtonsoft.Json.JsonConvert.SerializeObject(new { config.Features, result.Ids, result.Original });
             using (var sha = SHA256.Create()) result.Fingerprint = BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(canonical))).Replace("-", "");
             return result;
+        }
+
+        internal void RestoreNormalized(ComparisonConfig config)
+        {
+            Normalized = Original.Select(row => new DataCollection(config.Features.Select((f, j) =>
+                new { f, value = (row[j] - Offsets[j]) / Scales[j] }).ToDictionary(x => x.f, x => (object)x.value))).ToList();
         }
     }
 }
